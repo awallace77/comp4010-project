@@ -1,0 +1,51 @@
+\documentclass[12pt]{article}
+
+\usepackage{fullpage}
+\usepackage{fancybox}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{enumerate}
+
+%%%%%%%%%%%%%% Capsule %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\capsule}[2]{\vspace{0.5em}
+  \shadowbox{%
+    \begin{minipage}{.90\linewidth}%
+      \textbf{#1:}~#2%
+    \end{minipage}}
+  \vspace{0.5em} }
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcounter{ques}
+\newenvironment{question}{\stepcounter{ques}{\noindent\bf Question \arabic{ques}:}}{\vspace{5mm}}
+
+\begin{document} 
+
+\begin{center} \Large\bf
+COMP 4010A -- Project Proposal\\
+Inevitably Good Project \\
+Fall 2025
+\end{center} 
+
+\begin{center}
+Due: September 28, 2025 23:59. \\
+Group 12 \\
+Andrew Wallace - 101210291\\
+\end{center}
+
+\section{Problem Statement}
+Problem statement: What do you want to work on?
+
+\section{Feasibility}
+Feasibility: Why is RL suitable for the problem?
+
+\section{Milestones}
+Milestones: Write down a bi-weekly schedule on what should be finished.
+
+\vspace{0.5em}
+\newpage 
+
+\section{References}
+References from the literature (at least four publications), showing how others have attempted the problem or what algorithms you are going to try. You can use Google Scholar to find papers. Highly cited papers could be more relevant, and papers with official implementation (e.g., with codes on GitHub) can accelerate your project.
+
+\end{document} 
