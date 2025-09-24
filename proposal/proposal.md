@@ -54,6 +54,6 @@
 
 ## Resources
 
-https://cdn.discordapp.com/attachments/1414712209585606688/1419831096849207436/Maria_Manolaki_thesis_Development_of_Tower_Defense_game_with_Reingorcement_Learning_Agents.pdf?ex=68d33040&is=68d1dec0&hm=feadb595226becdd9e786d475d568e497e9c6f4d2021cc81d45e22138404328a& \\
+https://cdn.discordapp.com/attachments/1414712209585606688/1419831096849207436/Maria_Manolaki_thesis_Development_of_Tower_Defense_game_with_Reingorcement_Learning_Agents.pdf?ex=68d33040&is=68d1dec0&hm=feadb595226becdd9e786d475d568e497e9c6f4d2021cc81d45e22138404328a& <br/>
 
 https://rsucon.rsu.ac.th/files/proceedings/inter2020/IN20-140.pdf
