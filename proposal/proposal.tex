@@ -6,6 +6,10 @@
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{enumerate}
+\usepackage{parskip}
+\usepackage{hyperref} 
+\usepackage{paralist}
+
 
 %%%%%%%%%%%%%% Capsule %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand{\capsule}[2]{\vspace{0.5em}
@@ -22,45 +26,71 @@
 \begin{document} 
 
 \begin{center} \Large\bf
-COMP 4010A -- Project Proposal\\
-Inevitably Good Project \\
-Fall 2025
+RL for Tower Defense with Evolutionary Towers\\
 \end{center} 
 
 \begin{center}
-Due: September 28, 2025 23:59. \\
 Group 12 \\
-Andrew Wallace - 101210291, 
-Mohammad Rehman - 101220514
-Manal Hassan - 101263813,
+Andrew Wallace - 101210291 - andrewwallace3@cmail.carleton.ca\\
+Mohammad Rehman - 101220514 - mohammadrehman@cmail.carleton.ca \\
+Manal Hassan - 101263813 - manalhassa@cmail.carleton.ca\\
+Derrick Zhang - 101232374 - derrickzhang@cmail.carleton.ca
 \end{center}
 
-\section{Problem Statement}
-We aim to develop and train a reinforcement learning agent to play an evolving tower defense game where strategic resource allocation and adaptive tower placement are critical for success. Unlike traditional tower defense games with manual upgrades, our environment features towers that automatically evolve and increase in strength based on the number of enemies they eliminate, creating a feedback loop between decisions and long-term strategy when it comes to positioning.\\
+\section*{Problem Statement}
+We aim to develop and train a reinforcement learning agent to play an evolving tower defense game where strategic resource allocation and adaptive tower placement are critical for success. Unlike traditional tower defense games with manual upgrades, our environment features towers that automatically evolve and increase in strength based on the number of enemies they eliminate, creating a feedback loop between decisions and long-term strategy when it comes to positioning.\par
+The agent must learn to place two types of towers: single target and area-of-effect. The environment will be grid-based with limited budget constraints per wave. As enemy waves progress with increasing health, the agent must balance immediate defensive needs with long-term tower development, deciding not only where to place towers but also which towers to prioritize for enemy elimination to maximize evolutionary potential.\par
 
-\noindent The agent must learn to place two types of towers: single target and area-of-effect. The environment will be grid-based with limited budget constraints per wave. As enemy waves progress with increasing health, the agent must balance immediate defensive needs with long-term tower development, deciding not only where to place towers but also which towers to prioritize for enemy elimination to maximize evolutionary potential.\\
+This problem presents a few challenges: immediate survival against long-term tower development, spatial reasoning for optimal tower placement on a constrained grid, resource allocation under budget constraints, and adaptation to increasingly difficult enemy waves. \par
 
-\noindent This problem presents a few challenges: 
-\begin{itemize}
-    \item Immediate survival against long-term tower development,
-    \item Spatial reasoning for optimal tower placement on a constrained grid
-    \item Resource allocation under budget constraints
-    \item Adaptation to increasingly difficult enemy waves
-\end{itemize}
-The evolving tower mechanism introduces a novel aspect where early decisions significantly impact later capabilities, making this an interesting environment for a reinforcement learning algorithms that must learn both immediate responses and long-term strategic planning.
+The evolving tower mechanism introduces a novel aspect where early decisions significantly impact later capabilities, making this an interesting environment for a reinforcement learning algorithms that must learn both immediate responses and long-term strategic planning. \par
+
+\section*{Feasibility}
+
+Reinforcement learning (RL) is well-suited for this problem because the environment is stochastic, sequential, and dynamic, with an agent's actions influencing future states. \par 
+
+As the enemy waves increase in difficulty, the agent must adapt in terms of where to place towers, what type of towers to place, and their strategy to maximize their chances of survival. The sequential relationship of agent action and future success is a delayed reward optimization problem that RL methods, such as Q-learning, specialize in, making RL a good fit for this problem. [2] \par
+
+Furthermore, the presence of two tower types, budget constraints, enemy health, and a grid-based environment creates a large and dynamic state space, making traditional machine learning techniques infeasible. This further supports the case for reinforcement learning. [3] \par
+
+On the other hand, RL alone may be infeasible. Similar work in a grid-based tower defense game has shown that, ``A fully-fledged RL agent, trained to select one of the units and place it wherever desired, is hardly feasible in this case'' [4]. As such, techniques beyond reinforcement learning alone may be considered in this project. \par
+
+Lastly, the evolving tower mechanism further complicates the balance of immediate survival and long-term tower development, which is a direct RL use case. \par
+
+Overall, RL is well-suited for this problem due to its ability to handle delayed rewards, dynamic environments, and complex sequential decision-making, all of which are essential in a successful long-term tower defense strategy.
+
+
+\section*{Milestones}
+
+\textbf{Initial Environment Setup (Sept 29--Oct 13)}: Implement basic gym environment; submit progress report (Oct 15). 
+
+\textbf{Final Environment Implementation (Oct 14--Oct 27)}: Complete custom gym environment; test with random agent; submit demo video (10 min). 
+
+\textbf{Training and Initial Results (Oct 28--Nov 10)}: Research RL algorithms; begin implementation; submit progress report (Oct 30). 
+
+\textbf{Final Algorithm Implementation (Nov 11--Nov 24)}: Implement working RL algorithms; gather initial results; submit progress report (Nov 15). 
+
+\textbf{Result Demo (Nov 25--Dec 1)}: Collect results; perform algorithm comparison; submit progress report (Nov 30); submit demo video (Dec 1). 
+
+\textbf{Final Report Writing (Dec 2--Dec 7)}: Each member writes a section; compile and review; submit final report (Dec 8).
 
 
 
-\section{Feasibility}
-Feasibility: Why is RL suitable for the problem?
-
-\section{Milestones}
-Milestones: Write down a bi-weekly schedule on what should be finished.
 
 \vspace{0.5em}
 \newpage 
 
-\section{References}
-References from the literature (at least four publications), showing how others have attempted the problem or what algorithms you are going to try. You can use Google Scholar to find papers. Highly cited papers could be more relevant, and papers with official implementation (e.g., with codes on GitHub) can accelerate your project.
+\section*{References}
+
+[1] Sindhu Padakandla. 2021. A Survey of Reinforcement Learning Algorithms for Dynamically Varying Environments. ACM Comput. Surv. 54, 6, Article 127 (July 2021), 25 pages.
+https://doi.org/10.1145/3459991 \par
+
+[2] J. Clifton, E. Laber. (2020). Q-Learning: Theory and Applications. [ONLINE]. Available: https://www.annualreviews.org/content/journals/10.1146/annurev-statistics-031219-041220 \par
+
+[3] Dias, A., Foleiss, J., Lopes, R.P. (2022). Reinforcement Learning in Tower Defense. In: Barbedo, I., Barroso, B., Legerén, B., Roque, L., Sousa, J.P. (eds) Videogame Sciences and Arts. VJ 2020. Communications in Computer and Information Science, vol 1531. Springer, Cham. https://doi.org/10.1007/978-3-030-95305-8\_10 \par 
+
+[4] J. Bergdahl, A. Sestini and L. Gisslén, "Reinforcement Learning for High-Level Strategic Control in Tower Defense Games," 2024 IEEE Conference on Games (CoG), Milan, Italy, 2024, pp. 1-8, doi: 10.1109/CoG60054.2024.10645621 \par
+
+[5] Gym library. https://gym.openai.com/. Accessed September 20 2025
 
 \end{document} 
