@@ -42,19 +42,28 @@ We aim to develop and train a reinforcement learning agent to play an evolving t
 
 The agent must learn to place two types of towers: single target and area-of-effect. The environment will be grid-based with limited budget constraints per wave. As enemy waves progress with increasing health, the agent must balance immediate defensive needs with long-term tower development, deciding not only where to place towers but also which towers to prioritize for enemy elimination to maximize evolutionary potential.\par
 
-This problem presents a few challenges: immediate survival of ramping waves against long-term tower development, spatial reasoning for optimal tower placement on a constrained grid, resource allocation under budget constraints.
-The evolving tower mechanism is a novel aspect that creates a unique issue for reinforcement learning algorithms that must learn both short-term and long-term strategies. \par
+This problem presents a few challenges: immediate survival against long-term tower development, spatial reasoning for optimal tower placement on a constrained grid, resource
+allocation under budget constraints, and adaptation to increasingly difficult enemy waves.\par
 
+The evolving tower mechanism introduces a novel aspect where early decisions significantly
+impact later capabilities, making this an interesting environment for a reinforcement learning
+algorithms that must learn both immediate responses and long-term strategic planning.\par
 
 \section*{Feasibility}
 
 Reinforcement learning (RL) is well-suited for this problem because the environment is stochastic, sequential, and dynamic, with an agent's actions influencing future states. \par 
 
-As enemy waves increase in difficulty, the agent must adapt in terms of placing towers, what type of towers to place, and positional strategy for tower growth. The sequential relationship of agent action and future success is a delayed reward optimization problem that RL methods, such as Q-learning, specialize in, making RL a good fit for this problem [2]. Furthermore, the presence of a large and dynamic state space (tower types, budget, enemy health, and a gridbased environment) creates a large and dynamic state space, making traditional machine learning techniques infeasible, further supporting the use of RL. [3] \par
+As enemy waves increase in difficulty, the agent must adapt in terms of placing towers, what type of towers to place, and positional strategy for tower growth. The sequential relationship of agent action and future success is a delayed reward optimization problem that RL methods, such as Q-learning, specialize in, making RL a good fit for this problem [2]. \par
+
+Furthermore, the presence of a large and dynamic state space (tower types, budget, enemy health, and a grid-based environment) creates a large and dynamic state space, making traditional machine learning techniques infeasible, further supporting the use of RL. [3] \par
 
 On the other hand, RL alone may be infeasible. Similar work in a grid-based tower defense game has shown, “A fully-fledged RL agent, trained to select one of the units and place it wherever desired, is hardly feasible in this case” [4]. As such, techniques beyond reinforcement learning alone may be considered in this project. \par
 
 Lastly, the evolving tower mechanism further complicates the balance of immediate survival and long-term tower development, which is a direct RL use case. \par
+
+Overall, RL is well-suited for this problem due to its ability to handle delayed rewards,
+dynamic environments, and complex sequential decision-making, all of which are essential in
+a successful long-term tower defense strategy. \par
 
 
 \section*{Milestones}
