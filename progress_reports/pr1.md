@@ -178,7 +178,12 @@ In Advantage Actor-Critic, we have two models. An actor that learns the policy (
 
 In this initial planning phase, each group member has contributed to the project design and formulation. In the next two weeks, we plan on:
 
-// TODO
+Implementing Final Environment (Oct 14–Oct 27):
+
+- Complete custom gym environment
+- Test with random agent
+- Preliminary algorithm implementation
+- Submit demo video (10 min)
 
 ## References
 
