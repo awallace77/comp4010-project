@@ -1,4 +1,5 @@
 # RL for Tower Defense with Evolutionary Towers
+
 ## Progress Report 1
 
 **Group 12**
@@ -7,7 +8,6 @@
 - Mohammad Rehman - 101220514 - mohammadrehman@cmail.carleton.ca
 - Manal Hassan - 101263813 - manalhassa@cmail.carleton.ca
 - Derrick Zhang - 101232374 - derrickzhang@cmail.carleton.ca
-
 
 ## Progress
 
@@ -161,3 +161,27 @@ Once we get one algorithm working on this simple version, we will gradually add 
 - Increase to 10 waves
 
 This incremental approach reduces risk and lets us identify problems early.
+
+## Algorithms Specification
+
+### Deep Q-Learning
+
+Since the state space is large, Deep Q-Learning can be used to avoid the tabular nature of regular Q-Learning. This will require designing and implementing a neural network to map our input action to a particular Q-value. Using this algorithm, the agent will learn the approximate optimal policy, despite such a large state space. Furthermore, Deep Q-Learning has shown promising results from a related project [1].
+
+In our validation phase, we may use regular Q-Learning, as the reduced state space size makes an iterative tabular approach more feasible.
+
+### Advantage Actor-Critic (A2C)
+
+In Advantage Actor-Critic, we have two models. An actor that learns the policy (i.e., what action to take at a given state), and a critic that learns the state values. They work together, where the critic informs the actor about the amount of improvement there is in a particular action (i.e., the advantage). The Advantage Actor-Critic algorithm is suitable for this problem through the functional approximation of both state and state-action values, eliminating the need for tabular iteration. However, this algorithm requires two distinct neural networks (one for Q-values and one for state values) [2], increasing computational complexity and efficiency.
+
+## Project Progress Update
+
+In this initial planning phase, each group member has contributed to the project design and formulation. In the next two weeks, we plan on:
+
+// TODO
+
+## References
+
+[1] T. Blondiaux, L. Frank, H. Gebran, and A. Perot, “Plants vs. Zombies: Reinforcement learning to a tower defense game.” Available: https://hanadyg.github.io/portfolio/report/INF581_report.pdf
+
+[2] M. Manolaki, “Development of a Tower Defense Game with Reinforcement Learning Agents,” Nov. 2020.‌
