@@ -8,6 +8,11 @@
 - Manal Hassan - 101263813 - manalhassa@cmail.carleton.ca
 - Derrick Zhang - 101232374 - derrickzhang@cmail.carleton.ca
 
+
+## Progress
+
+Over the past two weeks, we all worked on the design specifications as a group.
+
 ## MDP Specification
 
 ### Environment Setup
