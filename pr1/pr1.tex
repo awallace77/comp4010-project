@@ -1,0 +1,194 @@
+\documentclass[12pt]{article}
+\usepackage{fullpage}
+\usepackage{fancybox}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{enumerate}
+\usepackage{parskip}
+\usepackage{hyperref} 
+\usepackage{paralist}
+%%%%%%%%%%%%%% Capsule %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\capsule}[2]{\vspace{0.5em}
+  \shadowbox{%
+    \begin{minipage}{.90\linewidth}%
+      \textbf{#1:}~#2%
+    \end{minipage}}
+  \vspace{0.5em} }
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{ques}
+\newenvironment{question}{\stepcounter{ques}{\noindent\bf Question \arabic{ques}:}}{\vspace{5mm}}
+\begin{document}
+\begin{center} \Large\bf
+RL for Tower Defense with Evolutionary Towers\\
+Progress Report 1
+\end{center} 
+\begin{center}
+Group 12 \\
+Andrew Wallace - 101210291 - andrewwallace3@cmail.carleton.ca\\
+Mohammad Rehman - 101220514 - mohammadrehman@cmail.carleton.ca \\
+Manal Hassan - 101263813 - manalhassa@cmail.carleton.ca\\
+Derrick Zhang - 101232374 - derrickzhang@cmail.carleton.ca
+\end{center}
+
+\section*{MDP Specification}
+
+\subsection*{Environment Setup}
+
+The game takes place on a 10 by 10 grid. There is a fixed path that goes from the top left to the bottom right in an S-shape, covering about 15 cells. The remaining 85 cells are where towers can be placed.
+
+The game has 10 waves total. The agent starts with 100 gold and the base has 20 lives. Each wave can last up to 200 time steps before moving to the next wave.
+
+\subsection*{State Space}
+
+The state includes everything the agent needs to know at any moment:
+
+\subsubsection*{Basic information:}
+\begin{compactitem}
+\item Current wave number (1 to 10)
+\item Current budget (starts at 100 gold, increases with kills)
+\item Base health (starts at 20 lives)
+\item Current time step within the wave (0 to 200)
+\end{compactitem}
+
+\subsubsection*{Grid information:}
+For each cell in the 10 by 10 grid, we track:
+\begin{compactitem}
+\item What is in the cell: empty, path, single-target tower, or area-of-effect tower
+\item If there is a tower, its level (1 to 5)
+\item If there is a tower, its experience points toward the next level
+\end{compactitem}
+
+\subsubsection*{Enemy information:}
+For each enemy currently in the game (maximum 20 at once):
+\begin{compactitem}
+\item Where it is on the path (position 0 to 14)
+\item How much health it has left
+\end{compactitem}
+
+For the algorithm, we represent the state by combining the grid information (10 by 10 cells, with 3 values per cell: what is in it, tower level, and tower XP), enemy positions and health, and the scalar values into a single vector.
+
+\subsection*{Action Space}
+
+To keep the problem manageable, the agent acts once at the beginning of each wave before enemies spawn. The agent can:
+\begin{compactitem}
+\item Do nothing and save money
+\item Place a single-target tower on any empty non-path cell (costs 50 gold)
+\item Place an area-of-effect tower on any empty non-path cell (costs 80 gold)
+\end{compactitem}
+
+This gives a total of 171 possible actions: 1 do-nothing action plus 2 tower types times 85 placeable positions. If a cell is occupied or the agent does not have enough money, those actions are hidden. This prevents the agent from wasting time trying invalid moves.
+
+\subsection*{Transition Dynamics}
+
+After the agent places towers at the start of a wave, the game runs automatically:
+
+\subsubsection*{Enemy spawning:}
+\begin{compactitem}
+\item Each wave spawns 5 + 2 (times the wave number enemies)
+\item Each enemy has 10 + (5 times the wave number) health
+\item Enemies appear gradually, one every 10 time steps
+\item All enemies start at position 0 on the path
+\end{compactitem}
+
+\subsubsection*{During each time step:}
+
+Enemies move first:
+\begin{compactitem}
+\item Each enemy moves forward one cell every 2 time steps
+\item If an enemy reaches the end of the path, the base loses 1 life and that enemy is removed
+\end{compactitem}
+
+Then towers attack:
+
+Single-target towers:
+\begin{compactitem}
+\item Can shoot enemies within 2 cells
+\item Target an enemy by some heuristic (closest to reaching the base perhaps)
+\item Attack once per time step
+\item Deal 10 times their level in damage
+\end{compactitem}
+
+Area-of-effect towers:
+\begin{compactitem}
+\item Can shoot at spots within 2 cells
+\item Hit all enemies within 2 cells of that spot
+\item Attack once every 2 time steps
+\item Deal 6 times their level in damage to each enemy hit
+\end{compactitem}
+
+When an enemy is defeated:
+\begin{compactitem}
+\item The agent gains 10 gold
+\item The tower that killed it gains 1 experience point
+\item When a tower gets enough experience points, it levels up
+\end{compactitem}
+
+Tower evolution happens when a tower gets enough kills:
+\begin{compactitem}
+\item Level 1 to 2: 10 kills
+\item Level 2 to 3: 20 more kills (30 total)
+\item Level 3 to 4: 30 more kills (60 total)
+\item Level 4 to 5: 40 more kills (100 total)
+\item Maximum level is 5
+\end{compactitem}
+
+\subsubsection*{Wave and episode ending:}
+
+A wave ends when all enemies are defeated or have reached the base. Then agent gets to place towers again. 
+
+The episode ends in success if all 10 waves are completed and the base still has health remaining. The episode ends in failure if the base health reaches 0. We also stop the episode if it takes more than 2000 total time steps to prevent it from running forever.
+
+\subsection*{Reward Function}
+
+The agent earns points based on its performance:
+
+During gameplay:
+\begin{compactitem}
+\item +10 for each enemy defeated
+\item -50 for each enemy that reaches the base
+\item +5 each time a tower levels up
+\end{compactitem}
+After completing a wave:
+\begin{compactitem}
+\item +20 if the wave was cleared without losing any lives
+\item +10 if the wave was cleared but some lives were lost
+\end{compactitem}
+At the end of the episode:
+\begin{compactitem}
+\item +200 for defeating all 10 waves
+\item -100 if the base is destroyed
+\end{compactitem}
+
+We do not penalize the agent for placing towers because we want it to learn that placing towers is necessary. Later we can add efficiency rewards if needed.
+
+The agent's goal is to maximize the total points over the entire episode. We use a discount factor of around 0.99, which means future rewards are worth slightly less than immediate rewards, but long-term planning is still very important.
+
+\subsection*{Rationale}
+
+The agent only acts at the start of each wave rather than every time step. This reduces the number of decisions needed and lets the agent focus on strategic tower placement rather than micromanagement.
+
+We use a fixed path so the environment is deterministic and the agent can learn consistent strategies. We can add path variation later if the basic version works well.
+
+The enemy and tower numbers are balanced so early waves are easy to learn from, middle waves require good strategy, and late waves are very challenging and require optimized tower placement and evolution.
+
+To validate our approach quickly, we may start with a simplified version:
+\begin{compactitem}
+\item 5 by 5 grid instead of 10 by 10
+\item 3 waves instead of 10
+\item Only single-target towers (no area-of-effect)
+\item No tower evolution (all towers stay level 1)
+\item 3 enemies per wave with 20 health each
+\end{compactitem}
+
+Once we get one algorithm working on this simple version, we will gradually add complexity:
+\begin{compactitem}
+\item Add tower evolution
+\item Add area-of-effect towers
+\item Increase grid size to 10 by 10
+\item Increase to 10 waves
+\end{compactitem}
+
+This incremental approach reduces risk and lets us identify problems early.
+
+\end{document}
