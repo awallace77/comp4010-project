@@ -4,6 +4,7 @@ import numpy as np
 import pygame
 import time
 from dataclasses import dataclass
+from gymnasium_env.envs.tower_defense_logic import TowerDefenseGame
 """
     COMP4010: Intro to RL
     Project Environment Demo
@@ -41,7 +42,7 @@ class Rewards:
 class TowerDefenseWorld(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 20}
 
-    def __init__(self, render_mode=None, size=5, num_enemies=1):
+    def __init__(self, render_mode=None, size=5, num_enemies=3):
 
         # General setup
         self.size = size
@@ -51,19 +52,19 @@ class TowerDefenseWorld(gym.Env):
 
         # Wave setup
         self.wave_count = 0
-        self.max_waves = 10
+        self.max_waves = 3
 
         # Rewards
         self.rewards = Rewards()
 
         # Tower setup
         self.tower_hp = 6
-        self.tower_damage = 1
+        self.tower_damage = 10
         self.tower_types = {"st": 0, "aoe": 1}
 
         # Enemy setup
         self.num_enemies = num_enemies
-        self.enemy_hp = 3
+        self.enemy_hp = 20
         self.enemy_damage = 2
 
         # Gameplay setup
@@ -71,10 +72,8 @@ class TowerDefenseWorld(gym.Env):
         self.grid_towers = np.zeros((size, size), dtype=int)  # 0 = empty, 1 = tower
         self.grid_enemies = np.zeros((size, size), dtype=int) # 0 = empty, >0 = enemy HP
 
-        # Enemy path (simple straight line bottom→top for now)
-        self.path = [(i, size // 2) for i in range(size - 1, -1, -1)]
-        # Enemies start at the top (0, center) and move downward
-        self.path = [(i, size // 2) for i in range(size)]  # (0,2) → (4,2)
+        # using the existing s shaped path code
+        self.path = TowerDefenseGame.s_path(size)
         for p in self.path:
             self.grid_enemies[p] = 3
 
