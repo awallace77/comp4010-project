@@ -17,7 +17,7 @@ from tower_defense_world import TowerDefenseWorld
 """
 
 def q_learning(env,
-                     episodes=200,
+                     episodes=2000,
                      alpha=0.5,
                      gamma=0.95,
                      epsilon_start=0.9,
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     
     # Approximate Q values
     Q = q_learning(env, 
-                   episodes=2000, 
+                   episodes=10000, 
                    alpha=0.5, 
                    gamma=0.9, 
                    epsilon_start=0.9, 
