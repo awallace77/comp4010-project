@@ -123,5 +123,5 @@ if __name__ == "__main__":
                    epsilon_decay_steps=1500,
                    log=True)
 
-    evaluate_policy(env, Q, episodes=5, sleep=0.5)
+    evaluate_policy(env, Q, episodes=10, sleep=0.5)
     env.close()

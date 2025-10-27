@@ -36,10 +36,10 @@ Manal Hassan - 101263813 - manalhassa@cmail.carleton.ca \\
 Derrick Zhang - 101232374 - derrickzhang@cmail.carleton.ca
 \end{center}
 
-\section*{Overview}
+\section*{Overview [@Derrick]}
 The initial environment is a simplified version of the final project. This document will outline the preliminary environment specifications and reinforcement learning algorithm.
 
-\section*{Out of Scope}
+\section*{Out of Scope [@Derrick]}
 The following features are out of scope for the initial environment:
 \begin{enumerate}
   \item Budget constraints
@@ -49,7 +49,7 @@ The following features are out of scope for the initial environment:
   \item Tower level-ups
 \end{enumerate}
 
-\section*{MDP}
+\section*{MDP [@Derrick]}
 Below is a description of the \texttt{TowerDefenseWorld} environment as a Markov Decision Process.
 
 \subsection*{State space}
@@ -91,10 +91,9 @@ The agents have 4 possible actions: do nothing, move down, move left, move right
   \item Base Destroyed = -10
 \end{enumerate}
 
-\subsection*{Transition Dynamic} 
-See \texttt{step()} function
+\textbf{\textit{@ Derrick, please add anything else that you would like, thank you!}}
 
-\section*{Essential Functions} 
+\section*{Code Walkthrough [@Andrew]}
 \subsection*{\_\_init\_\_()}
 \begin{enumerate}
   \item Environment initialization
@@ -117,6 +116,22 @@ See \texttt{step()} function
   \item Human readable output
 \end{enumerate}
 
-\section*{Code Walkthrough}
-\section*{Q-Learning Demo}
+\section*{Q-Learning Demo [@Manal]}
+For the initial environment, we implemented the Q-Learning Algorithm to demonstrate how the agent interacts with it. We run Q-Learning using the following parameters to approximate the Q-values: \\
+Episodes $= 10000$ \\
+Step-size $\alpha = 0.5$ \\
+Discount factor $\gamma = 0.9$ \\
+Epsilon $\epsilon = 0.9$ that decays to $0.05$ after episode $1500$\\
+Once we approximate the Q-values, we derive the approximate optimal policy and evaluate it's performance. \\[1em]
+To show the agent-environment interaction, we used pygame to draw the $5 \times 5$ grid. \\
+In the \texttt{\_render\_frame(self)} function, we have defined a \texttt{color\_map} where empty cells are white, cells with towers have a green circle, cells with an enemy are red, and the path is a light grey color. \\
+Having the tower as a green circle allows for both towers and enemies to be displayed even if they are on the same cell. \\
+To demonstrate, we will run \texttt{qlearn.py} \\
+In the console, we periodically (every 100th episode) see the results of the Q-learning algorithm, showing the total reward, enemies destroyed, and towers destroyed. \\
+Once we learn the Q-values, we evaluate the approximate optimal policy for 10 episodes, shown in a pygame window. \\
+One interesting observation we made was that the agent will sometimes place towers at the beginning of a path to block an enemy from advancing, often allowing another tower to attack while the enemy is blocked. \\
+\subsection*{Key takeaways}
+Q-learning appears to be an effective algorithm for learning and brings some interesting results. However, the state space is quite large and is going to grow as the project increases in complexity, which will make traditional tabular Q-Learning infeasible for finding the optimal policy. Our goal will be to transition from Q-Learning to Deep Q-Learning. We will also be exploring other algorithms such as Advantage Actor-Critic (A2C). \\[1em]
+\textbf{\textit{@ Manal, please add anything else that you would like, thank you!}}
+
 \end{document} 
