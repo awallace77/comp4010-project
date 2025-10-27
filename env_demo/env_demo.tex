@@ -1,0 +1,122 @@
+\documentclass[12pt]{article}
+
+\usepackage{fullpage}
+\usepackage{fancybox}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{enumerate}
+
+%%%%%%%%%%%%%% Capsule %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\capsule}[2]{\vspace{0.5em}
+  \shadowbox{%
+    \begin{minipage}{.90\linewidth}%
+      \textbf{#1:}~#2%
+    \end{minipage}}
+  \vspace{0.5em} }
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcounter{ques}
+\newenvironment{question}{\stepcounter{ques}{\noindent\bf Question \arabic{ques}:}}{\vspace{5mm}}
+
+\begin{document} 
+
+\begin{center} \Large\bf
+COMP 4010A -- Environment Demo\\
+RL for Tower Defense with Evolutionary Towers \\
+Fall 2025
+\end{center} 
+
+\begin{center}
+Due: October 27, 2025 23:59. \\
+Group 12 \\
+Andrew Wallace - 101210291 - andrewwallace3@cmail.carleton.ca \\
+Mohammad Rehman - 101220514 - mohammadrehman@cmail.carleton.ca \\
+Manal Hassan - 101263813 - manalhassa@cmail.carleton.ca \\
+Derrick Zhang - 101232374 - derrickzhang@cmail.carleton.ca
+\end{center}
+
+\section*{Overview}
+The initial environment is a simplified version of the final project. This document will outline the preliminary environment specifications and reinforcement learning algorithm.
+
+\section*{Out of Scope}
+The following features are out of scope for the initial environment:
+\begin{enumerate}
+  \item Budget constraints
+  \item Multiple tower types
+  \item Multiple enemy types
+  \item Incremental increase in wave difficulty
+  \item Tower level-ups
+\end{enumerate}
+
+\section*{MDP}
+Below is a description of the \texttt{TowerDefenseWorld} environment as a Markov Decision Process.
+
+\subsection*{State space}
+State is currently represented by the layout of the grid at a given time step. Specifically, a single state is stored as a 3d box with shape ($n$, $n$, 3) where $n$ represents the $n\times n$ grid.\\
+We store an array of size three in the third dimension to hold additional information. The first value of the array is $0$ or $1$ to indicate if the cell is a part of a path or not. The second is the tower hp or 0 if no tower exists in that cell. The third is the enemy hp or 0 if no tower exists in that cell.\\
+The size of our state space is given by
+\begin{equation}
+  ((T + 1) \cdot (E + 1) \cdot 2)^{n\times n}
+\end{equation}
+where \\
+$T = $ the max hp of a tower \\
+$E = $ the max hp of a enemy \\
+$n\times n$ is the number of cells in the grid\\[1em]
+Currently our environment has\\
+$T = 28$ \\
+$E = 13$ \\
+$n = 5$\\
+This results in a total state space size of:\\
+$((28 + 1) \cdot (13 + 1) \cdot 2)^{25} = 232^{25}$
+
+\subsection*{Action Space}
+\subsubsection*{Agent Actions}
+There are 26 total actions the agent can take at the beginning of a wave. Do nothing, or place a tower in one of the 25 positions. \\
+\texttt{self.action\_space = spaces.Discrete(size * size + 1)}
+\subsubsection*{Enemy Actions}
+Note, that the enemy actions are not a part of the action action space, however they are mentioned here for clarity. \\
+The agents have 4 possible actions: do nothing, move down, move left, move right. \\
+\texttt{self.enemy\_action\_space = spaces.Discrete(4)} 
+
+\subsection*{Reward Structure}
+\begin{enumerate}
+  \item Enemy Defeated = +10
+  \item Tower Defeated = -5
+  \item Tower Damaged = -1
+  \item Enemy Reaches Base = -50
+  \item Tower Level's up = +5 (not utilized yet)
+  \item Wave Cleared = +20
+  \item All Waves Cleared = +200
+  \item Base Destroyed = -10
+\end{enumerate}
+
+\subsection*{Transition Dynamic} 
+See \texttt{step()} function
+
+\section*{Essential Functions} 
+\subsection*{\_\_init\_\_()}
+\begin{enumerate}
+  \item Environment initialization
+  \item Setting up
+\end{enumerate}
+
+\subsection*{reset()}
+\begin{enumerate}
+  \item New episode
+\end{enumerate}
+
+\subsection*{step()} 
+\begin{enumerate}
+  \item Transition to next state and emit a reward
+  \item Return (observation, reward, terminated, truncated, info)
+\end{enumerate}
+
+\subsection*{render()} 
+\begin{enumerate}
+  \item Human readable output
+\end{enumerate}
+
+\section*{Code Walkthrough}
+\section*{Q-Learning Demo}
+\end{document} 

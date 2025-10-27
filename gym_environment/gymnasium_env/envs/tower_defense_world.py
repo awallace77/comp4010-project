@@ -5,6 +5,7 @@ import pygame
 import time
 from dataclasses import dataclass
 from gymnasium_env.envs.tower_defense_logic import TowerDefenseGame
+import math
 """
     COMP4010: Intro to RL
     Project Environment Demo
@@ -30,14 +31,25 @@ from gymnasium_env.envs.tower_defense_logic import TowerDefenseGame
 '''
 
 
-@dataclass
+@dataclass(frozen=True)
 class Rewards:
     ENEMY_DEFEATED: int = 10
+
+    TOWER_DEFEATED: int = -5
+    TOWER_DAMAGED: int = -1 
+
     ENEMY_REACH_BASE: int = -50
     TOWER_LEVEL_UP: int = 5
     WAVE_CLEARED: int = 20
     ALL_WAVES_CLEARED: int = 200
     BASE_DESTROYED: int = -10
+
+@dataclass(frozen=True)
+class GridCell:
+    EMPTY: int = 0
+    TOWER: int = 1
+    ENEMY: int = 2
+    PATH: int = 3
 
 class TowerDefenseWorld(gym.Env):
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 20}
@@ -58,24 +70,24 @@ class TowerDefenseWorld(gym.Env):
         self.rewards = Rewards()
 
         # Tower setup
-        self.tower_hp = 6
-        self.tower_damage = 10
+        self.tower_hp = 28
+        self.tower_damage = math.floor(math.log2(self.tower_hp))
         self.tower_types = {"st": 0, "aoe": 1}
 
         # Enemy setup
         self.num_enemies = num_enemies
-        self.enemy_hp = 20
-        self.enemy_damage = 2
+        self.enemy_hp = 13
+        self.enemy_damage= math.floor(math.log2(self.enemy_hp))
 
         # Gameplay setup
         self.phase = "build" # Phases: 'build' or 'defend'
         self.grid_towers = np.zeros((size, size), dtype=int)  # 0 = empty, 1 = tower
-        self.grid_enemies = np.zeros((size, size), dtype=int) # 0 = empty, >0 = enemy HP
+        self.grid_enemies = np.zeros((size, size), dtype=int) # 0 = empty, 2 = enemy, 3=path 
 
         # using the existing s shaped path code
         self.path = TowerDefenseGame.s_path(size)
         for p in self.path:
-            self.grid_enemies[p] = 3
+            self.grid_enemies[p] = GridCell.PATH
 
         # Towers and enemies info
         self.towers = {}  # Dict with (y, x): {hp: number, damage: number, type: string}
@@ -105,10 +117,10 @@ class TowerDefenseWorld(gym.Env):
         # NOTE: Eventually will update to have towers persist through episodes
         
         # Clear all info and set to original state
-        self.grid_enemies[:] = 0
-        self.grid_towers[:] = 0
+        self.grid_enemies[:] = GridCell.EMPTY
+        self.grid_towers[:] = GridCell.EMPTY
         for p in self.path:
-            self.grid_enemies[p] = 3
+            self.grid_enemies[p] = GridCell.PATH
         self.towers.clear() 
         self.enemies.clear()
         self.phase = "build"
@@ -171,8 +183,8 @@ class TowerDefenseWorld(gym.Env):
         y, x = divmod(action, self.size)
 
         # Place (create) tower if valid
-        if self.grid_towers[y, x] != 1: 
-            self.grid_towers[y, x] = 1
+        if self.grid_towers[y, x] != GridCell.TOWER: 
+            self.grid_towers[y, x] = GridCell.TOWER
 
             # Set tower health, damage, and type
             self.towers[(y, x)] = {"hp": self.tower_hp, "damage": self.tower_damage, "type": self.tower_types["st"]}
@@ -188,7 +200,7 @@ class TowerDefenseWorld(gym.Env):
         """
         for i in range(self.num_enemies):
             self.enemies.append({"pos": list(self.path[0]), "hp": self.enemy_hp, "damage": self.enemy_damage})
-            self.grid_enemies[tuple(self.path[0])] = 2
+            self.grid_enemies[tuple(self.path[0])] = GridCell.ENEMY
 
     def _defense_phase_step(self):
         """
@@ -204,6 +216,7 @@ class TowerDefenseWorld(gym.Env):
         for enemy in self.enemies:
             ey, ex = enemy["pos"]
             e_damage = enemy["damage"]
+            # Get enemy next cell on path
             next_idx = self.path.index((ey, ex)) + 1
             if next_idx < len(self.path):
                 next_pos = self.path[next_idx]
@@ -211,6 +224,9 @@ class TowerDefenseWorld(gym.Env):
                 if self.grid_towers[ny, nx] > 0:
                     # Tower blocks the enemy: deal damage to tower instead of moving
                     self.towers[(ny, nx)]["hp"] -= e_damage
+
+                    # Negative reward for taking damage to encourage better placement
+                    reward += self.rewards.TOWER_DAMAGED
                 else:
                     # Move forward
                     enemy["pos"] = [ny, nx]
@@ -238,19 +254,20 @@ class TowerDefenseWorld(gym.Env):
         for pos in dead_positions:
             del self.towers[pos]
         t_defeated = t_count - len(self.towers.keys())
+        reward += t_defeated * self.rewards.TOWER_DEFEATED
 
         # Update tower grid
-        self.grid_towers[:] = 0
+        self.grid_towers[:] = GridCell.EMPTY
         for (ty, tx), tower in self.towers.items():
-            self.grid_towers[ty, tx] = 1
+            self.grid_towers[ty, tx] = GridCell.TOWER
 
         # Update enemy grid
-        self.grid_enemies[:] = 0
+        self.grid_enemies[:] = GridCell.EMPTY
         for p in self.path:
-            self.grid_enemies[p] = 3
+            self.grid_enemies[p] = GridCell.PATH
         for enemy in self.enemies:
             y, x = enemy["pos"]
-            self.grid_enemies[y, x] = 2
+            self.grid_enemies[y, x] = GridCell.ENEMY
 
         # Check if all enemies are destroyed
         if not self.enemies:
@@ -264,7 +281,7 @@ class TowerDefenseWorld(gym.Env):
     
         # Layer 0: path
         for y, x in self.path:
-            obs[y, x, 0] = 1
+            obs[y, x, 0] = 1 # 1 if cell is a part of a path
         
         # Layer 1: towers (store HP)
         for (y, x), tower in self.towers.items():
@@ -279,7 +296,6 @@ class TowerDefenseWorld(gym.Env):
         return obs
 
     def render(self):
-        # if self.render_mode == "rgb_array":
         return self._render_frame()
 
     def _render_frame(self):
@@ -295,10 +311,10 @@ class TowerDefenseWorld(gym.Env):
         canvas.fill((255, 255, 255))
 
         color_map = {
-            0: (240, 240, 240),  # empty
-            1: (0, 150, 0),      # tower
-            2: (200, 0, 0),      # enemy
-            3: (150, 150, 150),  # path
+            GridCell.EMPTY: (240, 240, 240),  # empty
+            GridCell.TOWER: (0, 150, 0),      # tower
+            GridCell.ENEMY: (200, 0, 0),      # enemy
+            GridCell.PATH: (150, 150, 150),  # path
         }
 
         # Draw the grid
@@ -306,22 +322,22 @@ class TowerDefenseWorld(gym.Env):
             for x in range(self.size):
                 # Draw path or empty background
                 if (y, x) in self.path:
-                    pygame.draw.rect(canvas, color_map[3], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
+                    pygame.draw.rect(canvas, color_map[GridCell.PATH], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
                 else:
-                    pygame.draw.rect(canvas, color_map[0], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
+                    pygame.draw.rect(canvas, color_map[GridCell.EMPTY], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
 
                 # Draw enemies first (so tower can be on top)
                 for enemy in self.enemies:
                     ey, ex = enemy["pos"]
                     if ey == y and ex == x:
-                        pygame.draw.rect(canvas, color_map[2], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
+                        pygame.draw.rect(canvas, color_map[GridCell.ENEMY], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
 
                 # Draw tower on top
                 for (ty, tx) in self.towers.keys():
                     if ty == y and tx == x:
                         pygame.draw.circle(
                             canvas,
-                            color_map[1],
+                            color_map[GridCell.TOWER],
                             (x*cell_size + cell_size//2, y*cell_size + cell_size//2),
                             cell_size//3
                         )
@@ -343,11 +359,12 @@ class TowerDefenseWorld(gym.Env):
             pygame.quit()
             
     def state_to_key(self, obs):
-        # obs is a numpy array shape (size, size). Convert to an immutable tuple key.
+        # obs is a numpy array shape (size, size, 3). Convert to an immutable tuple key.
         return tuple(obs.flatten().tolist())
 
 if __name__ == "__main__":
 
+    # Local testing
     env = TowerDefenseWorld(render_mode="human")
     obs, info = env.reset()
     done = False
@@ -357,8 +374,10 @@ if __name__ == "__main__":
         action = env.action_space.sample()  # random policy
         obs, reward, done, truncated, info = env.step(action)
         total_reward += reward
-        env.render()          # actually draw the grid
-        time.sleep(0.3)       # slow it down so you can watch
+
+        # draw the grid
+        env.render()          
+        time.sleep(0.3)
 
     print("Episode finished with total reward:", total_reward)
  
