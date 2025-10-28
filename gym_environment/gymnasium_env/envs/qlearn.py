@@ -1,5 +1,6 @@
 import numpy as np
 import random
+import pygame
 import time
 from collections import defaultdict
 from tower_defense_world import TowerDefenseWorld
@@ -78,35 +79,29 @@ def q_learning(env,
 
     return Q
 
-def evaluate_policy(env, Q, episodes=10, sleep=0.2):
-    """
-        Evaluate approximate optimal policy Q on given env.
-        Args:
-            env: the environment to evaluate against
-            Q: the Q values to derive approximate optimal policy
-            episodes: the number of episodes to evaluate
-            sleep: the amount of time to show the result
-    """ 
-    print(f"EVALUATION OF Q-LEARNED POLICY **** \n")
+def evaluate_policy(env, Q, episodes=10, sleep=0.1):
+
+    print("EVALUATION OF Q-LEARNED POLICY **** \n")
+
     for ep in range(episodes):
         state, info = env.reset()
         done = False
         total_reward = 0
 
         while not done:
-            
+
             action = int(np.argmax(Q[state])) # greedy action derived from Q
-            state_prime, reward, terminated, _, info = env.step(action)
-            state = state_prime
-            total_reward += reward
+            state, reward, terminated, _, info = env.step(action)
             done = terminated
+            total_reward += reward
 
             env.render()
-            time.sleep(sleep)
+            pygame.time.wait(300)
 
-        print(f"Episode {ep}/{episodes}  total_reward={total_reward:.2f}")
-        print(f"Wave {info['wave']} enemies_destroyed={info['enemies_destroyed']}  towers_destroyed={info['towers_destroyed']}\n")
+        print(f"Episode {ep+1}/{episodes}  total_reward={total_reward:.2f}")
+        print(f"Wave {info.get('wave', '?')} enemies_destroyed={info.get('enemies_destroyed', '?')}  towers_destroyed={info.get('towers_destroyed', '?')}\n")
 
+    env.close()
 
 if __name__ == "__main__":
 
@@ -122,6 +117,8 @@ if __name__ == "__main__":
                    epsilon_end=0.05,
                    epsilon_decay_steps=1500,
                    log=True)
+    env.close()
 
+    env = TowerDefenseWorld(render_mode="human") 
     evaluate_policy(env, Q, episodes=10, sleep=0.5)
     env.close()

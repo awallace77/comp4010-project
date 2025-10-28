@@ -299,6 +299,9 @@ class TowerDefenseWorld(gym.Env):
         return self._render_frame()
 
     def _render_frame(self):
+        if self.render_mode != "human":
+            return
+
         cell_size = 80
         window_size = self.size * cell_size
         if self.window is None:
@@ -306,6 +309,11 @@ class TowerDefenseWorld(gym.Env):
             self.window = pygame.display.set_mode((window_size, window_size))
         if self.clock is None:
             self.clock = pygame.time.Clock()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.close()
+                return
 
         canvas = pygame.Surface((window_size, window_size))
         canvas.fill((255, 255, 255))
@@ -349,7 +357,7 @@ class TowerDefenseWorld(gym.Env):
 
         # Blit canvas
         self.window.blit(canvas, (0, 0))
-        pygame.display.update()
+        pygame.display.flip()
         self.clock.tick(self.metadata["render_fps"])
  
 
@@ -357,6 +365,7 @@ class TowerDefenseWorld(gym.Env):
         if self.window is not None:
             pygame.display.quit()
             pygame.quit()
+        self.window = None
             
     def state_to_key(self, obs):
         # obs is a numpy array shape (size, size, 3). Convert to an immutable tuple key.
