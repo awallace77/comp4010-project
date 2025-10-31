@@ -9,13 +9,15 @@ Group 12
 
 In the implementing environment phase (Oct 14 - Oct 27), each group member has contributed to the environment setup, implementation, and design.
 
-Also, an agent has been implemented using the Q-Learning algorithm in our simplified environment. Lastly, the environment demo was completed with each group member contributing to the verbal presentation.
+A Q-Learning agent was successfully implemented in a simplified version of the environment, allowing us to test basic reinforcement learning interactions between towers and enemies. Each member participated in debugging, refining the state and action representations, and improving the training loop for stability.
 
-In the next two weeks, we will work on:
+We also recorded and submitted a demo of the environment, showcasing the elements of the implementation and explaining the code and learning process. Each member took part in the verbal presentation to discuss their specific contributions and observations.
 
-Training and Initial Results (Oct 28–Nov 10):
+Plan for next two weeks:
 
-- Add features to the environment (e.g., tower level ups)
-- Research RL algorithms (non-tabular)
-- Begin implementation
+### Training and Initial Results (Oct 28–Nov 10)
+
+- Add new features to the environment, such as tower level-ups and more interaction mechanics
+- Research and select non-tabular algorithms suitable for larger state spaces (e.g., Deep Q-Learning or Actor-Critic)
+- Begin implementation of the algorithms and start training to observe performance and compare methods
 - Submit progress report (Oct 30)
