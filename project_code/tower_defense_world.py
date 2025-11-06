@@ -24,7 +24,7 @@ import math
         - Add additional towers
         - Add multiple enemies
         - Add tower level up mechanism
-        - Update UI to have HP 
+        - Update UI to have HP -- DONE
         - Additional algos
         - Add money logic
         etc., 
@@ -79,6 +79,10 @@ class TowerDefenseWorld(gym.Env):
         self.enemy_hp = 13
         self.enemy_damage= math.floor(math.log2(self.enemy_hp))
 
+        # Base setup
+        self.base_health_max = 20
+        self.base_health = self.base_health_max
+
         # Gameplay setup
         self.phase = "build" # Phases: 'build' or 'defend'
         self.grid_towers = np.zeros((size, size), dtype=int)  # 0 = empty, 1 = tower
@@ -125,6 +129,7 @@ class TowerDefenseWorld(gym.Env):
         self.enemies.clear()
         self.phase = "build"
         self.wave_count = 0
+        self.base_health = self.base_health_max  # Reset base health
 
         return self._get_obs(), {}
 
@@ -158,7 +163,13 @@ class TowerDefenseWorld(gym.Env):
                     reward += self.rewards.WAVE_CLEARED
 
         obs = self._get_obs()
-        info = {"phase": self.phase, "wave": self.wave_count, "enemies_destroyed": e_defeated, "towers_destroyed": t_defeated}
+        info = {
+            "phase": self.phase, 
+            "wave": self.wave_count, 
+            "enemies_destroyed": e_defeated, 
+            "towers_destroyed": t_defeated,
+            "base_health": self.base_health
+        }
 
         if self.render_mode == "human":
             self._render_frame()
@@ -182,8 +193,8 @@ class TowerDefenseWorld(gym.Env):
         action -= 1  # because 0 is "do nothing"
         y, x = divmod(action, self.size)
 
-        # Place (create) tower if valid
-        if self.grid_towers[y, x] != GridCell.TOWER: 
+        # Place (create) tower if valid - must not be on path or already have a tower
+        if (y, x) not in self.path and self.grid_towers[y, x] != GridCell.TOWER: 
             self.grid_towers[y, x] = GridCell.TOWER
 
             # Set tower health, damage, and type
@@ -213,33 +224,39 @@ class TowerDefenseWorld(gym.Env):
         e_defeated = 0
         t_defeated = 0
 
-        for enemy in self.enemies:
+        # Move enemies along the path (they don't interact with towers while moving)
+        enemies_to_remove = []
+        for i, enemy in enumerate(self.enemies):
             ey, ex = enemy["pos"]
-            e_damage = enemy["damage"]
             # Get enemy next cell on path
             next_idx = self.path.index((ey, ex)) + 1
             if next_idx < len(self.path):
                 next_pos = self.path[next_idx]
                 ny, nx = next_pos
-                if self.grid_towers[ny, nx] > 0:
-                    # Tower blocks the enemy: deal damage to tower instead of moving
-                    self.towers[(ny, nx)]["hp"] -= e_damage
-
-                    # Negative reward for taking damage to encourage better placement
-                    reward += self.rewards.TOWER_DAMAGED
-                else:
-                    # Move forward
-                    enemy["pos"] = [ny, nx]
+                # Move forward along path
+                enemy["pos"] = [ny, nx]
             else:
-                reward += self.rewards.ENEMY_REACH_BASE # negative reward for enemy reaching base
-                terminated = True
+                # Enemy reached the base - damage it!
+                self.base_health -= 1  # Each enemy deals 1 damage to base
+                reward += self.rewards.ENEMY_REACH_BASE  # negative reward
+                enemies_to_remove.append(i)  # Mark for removal
+        
+        # Remove enemies that reached the base
+        for idx in reversed(enemies_to_remove):
+            self.enemies.pop(idx)
+        
+        # Check if base is destroyed
+        if self.base_health <= 0:
+            reward += self.rewards.BASE_DESTROYED  # additional penalty
+            terminated = True
+            return reward, terminated, e_defeated, t_defeated
 
-        # Towers attack along their row and column
+        # Towers attack enemies along their row and column (shooting at path from the sides)
         for (ty, tx), tower in self.towers.items():
             t_damage = tower["damage"]
             for enemy in self.enemies:
                 ey, ex = enemy["pos"]
-                if ey == ty or ex == tx:  # same row or same column
+                if ey == ty or ex == tx:  # same row or same column - tower can shoot this enemy
                     enemy["hp"] -= t_damage
 
         # Remove dead enemies
@@ -328,9 +345,23 @@ class TowerDefenseWorld(gym.Env):
         # Draw the grid
         for y in range(self.size):
             for x in range(self.size):
+                # Check if this is the base cell
+                is_base = (y, x) == self.base
+                
                 # Draw path or empty background
                 if (y, x) in self.path:
-                    pygame.draw.rect(canvas, color_map[GridCell.PATH], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
+                    if is_base:
+                        # Color base based on health (green -> yellow -> red)
+                        health_ratio = self.base_health / self.base_health_max
+                        if health_ratio > 0.66:
+                            base_color = (0, 100, 200)  # Blue when healthy
+                        elif health_ratio > 0.33:
+                            base_color = (200, 150, 0)  # Orange when damaged
+                        else:
+                            base_color = (200, 0, 0)    # Red when critical
+                        pygame.draw.rect(canvas, base_color, pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
+                    else:
+                        pygame.draw.rect(canvas, color_map[GridCell.PATH], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
                 else:
                     pygame.draw.rect(canvas, color_map[GridCell.EMPTY], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
 
@@ -355,6 +386,28 @@ class TowerDefenseWorld(gym.Env):
             pygame.draw.line(canvas, (0, 0, 0), (i*cell_size, 0), (i*cell_size, window_size))
             pygame.draw.line(canvas, (0, 0, 0), (0, i*cell_size), (window_size, i*cell_size))
 
+        # Draw base border (thick border to highlight it)
+        by, bx = self.base
+        pygame.draw.rect(canvas, (255, 255, 255), 
+                        pygame.Rect(bx*cell_size, by*cell_size, cell_size, cell_size), 
+                        width=4)  # Thick white border
+
+        # Draw base health text
+        by, bx = self.base
+        
+        # Draw "BASE" label
+        font_label = pygame.font.Font(None, 28)
+        label_surface = font_label.render("BASE", True, (255, 255, 255))
+        label_rect = label_surface.get_rect(center=(bx*cell_size + cell_size//2, by*cell_size + cell_size//2 - 15))
+        canvas.blit(label_surface, label_rect)
+        
+        # Draw health ratio
+        font_health = pygame.font.Font(None, 32)
+        health_text = f"{self.base_health}/{self.base_health_max}"
+        text_surface = font_health.render(health_text, True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=(bx*cell_size + cell_size//2, by*cell_size + cell_size//2 + 12))
+        canvas.blit(text_surface, text_rect)
+
         # Blit canvas
         self.window.blit(canvas, (0, 0))
         pygame.display.flip()
@@ -371,22 +424,20 @@ class TowerDefenseWorld(gym.Env):
         # obs is a numpy array shape (size, size, 3). Convert to an immutable tuple key.
         return tuple(obs.flatten().tolist())
 
-if __name__ == "__main__":
-
-    # Local testing
-    env = TowerDefenseWorld(render_mode="human")
-    obs, info = env.reset()
-    done = False
-    total_reward = 0
-
-    while not done:
-        action = env.action_space.sample()  # random policy
-        obs, reward, done, truncated, info = env.step(action)
-        total_reward += reward
-
-        # draw the grid
-        env.render()          
-        time.sleep(0.3)
-
-    print("Episode finished with total reward:", total_reward)
- 
+# if __name__ == "__main__":
+#     # Local testing
+#     env = TowerDefenseWorld(render_mode="human")
+#     obs, info = env.reset()
+#     done = False
+#     total_reward = 0
+# 
+#     while not done:
+#         action = env.action_space.sample()  # random policy
+#         obs, reward, done, truncated, info = env.step(action)
+#         total_reward += reward
+# 
+#         # draw the grid
+#         env.render()          
+#         time.sleep(0.3)
+# 
+#     print("Episode finished with total reward:", total_reward)

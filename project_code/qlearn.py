@@ -75,7 +75,7 @@ def q_learning(env,
         # Log results of episode (every 100th)
         if log and ep % 100 == 0 or ep == 1:
             print(f"Episode {ep} of {episodes} total_reward={total_reward:.2f} eps={epsilon:.3f}")
-            print(f"Wave {info['wave']} enemies_destroyed={info['enemies_destroyed']}  towers_destroyed={info['towers_destroyed']}\n")
+            print(f"Wave {info['wave']} enemies_destroyed={info['enemies_destroyed']}  towers_destroyed={info['towers_destroyed']}  base_health={info.get('base_health', '?')}\n")
 
     return Q
 
@@ -99,7 +99,7 @@ def evaluate_policy(env, Q, episodes=10, sleep=0.1):
             pygame.time.wait(300)
 
         print(f"Episode {ep+1}/{episodes}  total_reward={total_reward:.2f}")
-        print(f"Wave {info.get('wave', '?')} enemies_destroyed={info.get('enemies_destroyed', '?')}  towers_destroyed={info.get('towers_destroyed', '?')}\n")
+        print(f"Wave {info.get('wave', '?')} enemies_destroyed={info.get('enemies_destroyed', '?')}  towers_destroyed={info.get('towers_destroyed', '?')}  base_health={info.get('base_health', '?')}\n")
 
     env.close()
 

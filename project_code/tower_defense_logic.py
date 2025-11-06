@@ -28,5 +28,7 @@ class TowerDefenseGame:
             left_to_right = not left_to_right
         return path
 
-newGame = TowerDefenseGame()
-print(newGame.path)
+# Test code moved to if __name__ == "__main__" block
+if __name__ == "__main__":
+    newGame = TowerDefenseGame()
+    print(newGame.path)
