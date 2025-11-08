@@ -1,9 +1,8 @@
 import numpy as np
 import random
 import pygame
-import time
 from collections import defaultdict
-from tower_defense_world import TowerDefenseWorld
+from envs.tower_defense_env import TowerDefenseEnv
 """
     COMP4010: Intro to RL
     Project Environment Demo
@@ -18,7 +17,7 @@ from tower_defense_world import TowerDefenseWorld
 """
 
 def q_learning(env,
-                     episodes=2000,
+                     episodes=1000,
                      alpha=0.5,
                      gamma=0.95,
                      epsilon_start=0.9,
@@ -37,7 +36,8 @@ def q_learning(env,
     Returns:
         Approximated Q values
     """
-    Q = defaultdict(lambda: np.zeros(env.action_space.n))
+    # Q = defaultdict(lambda: np.zeros(env.action_space.n))
+    Q = defaultdict(lambda: np.random.rand(env.action_space.n))
 
     def e_greedy(e, state):
         if random.random() < e:
@@ -79,7 +79,7 @@ def q_learning(env,
 
     return Q
 
-def evaluate_policy(env, Q, episodes=10, sleep=0.1):
+def evaluate_policy(env, Q, episodes=2, sleep=0.1):
 
     print("EVALUATION OF Q-LEARNED POLICY **** \n")
 
@@ -95,30 +95,11 @@ def evaluate_policy(env, Q, episodes=10, sleep=0.1):
             done = terminated
             total_reward += reward
 
-            env.render()
-            pygame.time.wait(300)
 
         print(f"Episode {ep+1}/{episodes}  total_reward={total_reward:.2f}")
-        print(f"Wave {info.get('wave', '?')} enemies_destroyed={info.get('enemies_destroyed', '?')}  towers_destroyed={info.get('towers_destroyed', '?')}\n")
+        print(f"Wave Reached {info.get('wave', '?')}") 
+        print(f"enemies_destroyed={info.get('enemies_destroyed', '?')}  towers_destroyed={info.get('towers_destroyed', '?')}")
+        print(f"base_start_health={info.get('base_start_health', '?')}")
+        print(f"base_health={info.get('base_health', '?')}\n")
 
-    env.close()
-
-if __name__ == "__main__":
-
-    # env = TowerDefenseWorld(render_mode="human") 
-    env = TowerDefenseWorld(render_mode=None)
-    
-    # Approximate Q values
-    Q = q_learning(env, 
-                   episodes=10000, 
-                   alpha=0.5, 
-                   gamma=0.9, 
-                   epsilon_start=0.9, 
-                   epsilon_end=0.05,
-                   epsilon_decay_steps=1500,
-                   log=True)
-    env.close()
-
-    env = TowerDefenseWorld(render_mode="human") 
-    evaluate_policy(env, Q, episodes=10, sleep=0.5)
     env.close()
