@@ -9,6 +9,17 @@ class Tower:
         Level 4 to 5: 40 more kills (100 total)
         Maximum level is 5
     """
+    _id_counter = 1
+    _id_map = {}
+
+    @classmethod
+    def get_id(cls):
+        """Generate ids for tower classes"""
+        if cls not in cls._id_map:
+            cls._id_map[cls] = Tower._id_counter
+            Tower._id_counter += 1
+        return cls._id_map[cls]
+        
     def __init__(self, pos, health, damage, range, cost):
         self.health = health
         self.original_health = health
@@ -32,9 +43,6 @@ class Tower:
                 (ex == x and abs(ex-x) <= self.range)
             ):
                 enemy.take_damage(self.damage)
-                if enemy.is_dead():
-                    self.killed_enemy()
-
                 return [enemy]
         return []
     
@@ -51,15 +59,20 @@ class Tower:
         self.health = self.original_health
 
     def level_up(self):
+        """Returns true if valid level occurred, false otherwise"""
         if self.level < TowerInfo.MAX_LEVEL:
             self.level += 1
             # Increment damage by LEVEL_DAMAGE_DELTA % of current damage
             self.damage += TowerInfo.LEVEL_DAMAGE_DELTA * self.damage
+            return True
+        return False
 
     def killed_enemy(self):
+        """Returns true if leveled up after kill, false otherwise"""
         self.kills += 1
-        if self.kills > (self.level * TowerInfo.LEVEL_KILLS_DELTA): # Check if reached next level
-            self.level_up()
+        if self.kills > self.level * TowerInfo.LEVEL_KILLS_DELTA:
+            return self.level_up()
+        return False
 
 
 class SingleTargetTower(Tower):

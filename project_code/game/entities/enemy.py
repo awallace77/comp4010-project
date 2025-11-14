@@ -4,7 +4,18 @@ import random
 class Enemy:
     """
         Defines an enemy
-    """
+    """    
+    _id_counter = 1
+    _id_map = {}
+
+    @classmethod
+    def get_id(cls):
+        """Generate ids for enemy classes"""
+        if cls not in cls._id_map:
+            cls._id_map[cls] = Enemy._id_counter
+            Enemy._id_counter += 1
+        return cls._id_map[cls]
+
     def __init__(self, pos, path, health=EnemyInfo.HEALTH, damage=EnemyInfo.DAMAGE):
         self.pos = pos
         self.path = path # assumed valid path to base

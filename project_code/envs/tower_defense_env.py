@@ -2,7 +2,7 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 import pygame
-from game.game_info import TowerInfo, EnemyInfo, BaseInfo
+from game.game_info import TowerInfo, EnemyInfo, BaseInfo, BudgetInfo
 from enum import IntEnum, StrEnum
 from dataclasses import dataclass
 from game.entities.enemy import Enemy
@@ -19,16 +19,20 @@ from game.entities.base import Base
 """
 
 '''
-    TODO:
-        - Handle base destroyed -- DONE
-        - Add additional towers
-        - Add multiple enemies
-        - Add tower level up mechanism -- DONE
-        - Update UI to have HP -- DONE
-        - Update UI to have tower level -- DONE
-        - Additional algos
-        - Add money logic
+    General TODOs:
+        - DONE: Handle base destroyed
+        - DONE: Update UI to have HP
+        - TODO: Add Additional RL algos (from libraries)
         etc., 
+
+        Andrew TODOs:
+            - DONE: Add additional towers
+            - DONE: Add multiple enemies
+            - DONE: Add tower level up mechanism -- DONE
+            - DONE: Update UI to have tower levels and damage
+            - TODO: Update state to handle multiple towers and enemies
+            - TODO: Add money/budget logic
+            - TODO: Allow for placing multiple towers and moving existing towers
 '''
 
 ENV_NAME = "RL Tower Defense | COMP4010 - Group 12"
@@ -69,7 +73,14 @@ class TowerDefenseEnv(gym.Env):
     """
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 20}
 
-    def __init__(self, render_mode=None, size=5, num_enemies=1, max_waves=10, render_rate=100):
+    def __init__(
+            self,  
+            size=5, 
+            num_enemies=1,
+            max_waves=10, 
+            render_mode=None,
+            render_rate=100
+        ):
 
         # General setup
         self.size = size
@@ -86,6 +97,10 @@ class TowerDefenseEnv(gym.Env):
         self.phase = Phase.BUILD
         self.total_reward = 0
         self.current_episode = 0
+
+        # Budget setup
+        self.start_budget = BudgetInfo.BUDGET
+        self.budget = BudgetInfo.BUDGET
         
         # Grid setup
         #[i, j, k] - i, j is (row, col), 
@@ -110,7 +125,8 @@ class TowerDefenseEnv(gym.Env):
 
         # Action space setup
         # 0 = do nothing, others = place tower at specific cell
-        self.action_space = spaces.Discrete(size * size + 1) # TODO: Update to enable moving towers at beginning of wave
+        # TODO: Update to enable moving towers/placing multiple towers in accordance to budget at beginning of wave
+        self.action_space = spaces.Discrete(size * size + 1) 
 
         # Observation (state space) setup 
         '''A 3d array (matrix n x n x len(GridCell) - 1) where [i, j, k]: 
@@ -132,7 +148,7 @@ class TowerDefenseEnv(gym.Env):
             ),
             "budget": spaces.Box( # Current Budget
                 low=0,
-                high=MAX_INT,
+                high=BudgetInfo.MAX_BUDGET,
                 shape=(1,),
                 dtype=int
             )
@@ -156,6 +172,7 @@ class TowerDefenseEnv(gym.Env):
         self.phase = Phase.BUILD
         self.wave_count = 0
         self.current_episode += 1
+        self.budget = self.start_budget
         self._update_grid()
 
         return self._get_obs(), {}
@@ -243,6 +260,10 @@ class TowerDefenseEnv(gym.Env):
         action -= 1  # get rid of 0 because 0 is "do nothing"
         y, x = self._action_to_coordinate(self.size, action)
 
+        # TODO: add option to place multiple towers based on current budget
+        # Need to encode an action to include number of towers and type of tower
+        # ()
+
         # Place (create) tower if valid - must not be on path or already have a tower
         if (y, x) != self.base.pos and (y, x) not in self.path and self.grid[y, x, GridCell.TOWER] != GridCell.TOWER: 
             # TODO: Add option for AoE tower w budget constraints
@@ -304,9 +325,15 @@ class TowerDefenseEnv(gym.Env):
             return reward, wave_terminated, e_defeated 
 
         # Towers attack 
-        for (ty, tx), tower in self.towers.items():
+        for tower in self.towers.values():
             attacked_enemies = tower.attack(self.enemies)
             e_damaged += len(attacked_enemies)
+
+            for e in attacked_enemies: # level up towers
+                if e.is_dead():
+                    leveled_up = tower.killed_enemy()
+                    if leveled_up: 
+                        reward += Reward.TOWER_LEVEL_UP
 
         # Remove dead enemies
         e_count = len(self.enemies)
@@ -443,7 +470,7 @@ class TowerDefenseEnv(gym.Env):
 
     def _update_grid(self):
         """ Update grid with current info """
-        for (ty, tx), tower in self.towers.items(): # Update towers on grid
+        for (ty, tx) in self.towers.keys(): # Update towers on grid
             self.grid[ty, tx, GridCell.TOWER] = GridCell.TOWER
         
         for enemy in self.enemies: # Update enemies on grid

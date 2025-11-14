@@ -81,5 +81,8 @@ def test_tower_visualization():
 
 
 if __name__ == "__main__":
-    # test_base_visualization()
+    """
+        TEST SUITE: Add test functions here
+    """
+    test_base_visualization()
     test_tower_visualization()

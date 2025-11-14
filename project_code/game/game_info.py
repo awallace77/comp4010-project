@@ -28,6 +28,7 @@ class TowerInfo:
     MAX_LEVEL: int = 5
     LEVEL_KILLS_DELTA: int = 10 # number of kills required between levels
     LEVEL_DAMAGE_DELTA: float = 0.15 # percentage to increase damage by between levels
+    KILL_PAYOUT: int = 10 # the "coins" received after a kill
     
     SINGLE_TARGET_HEALTH: int = 28
     SINGLE_TARGET_DAMAGE: int = 4
@@ -38,5 +39,12 @@ class TowerInfo:
     AOE_DAMAGE: int = 4
     AOE_RANGE: int = 2
     AOE_COST: int = 65
+
+@dataclass(frozen=True)
+class BudgetInfo:
+    MAX_BUDGET: int = 10000
+    BUDGET: int = 150 # the default budget
+
+
 
 
