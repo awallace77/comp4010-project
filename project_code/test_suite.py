@@ -1,15 +1,11 @@
 """
 Test script to visualize the base at different health levels
 """
-import pygame
-import sys
-import os
-
-# Add parent directory to path for imports
-# sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 from envs.tower_defense_env import TowerDefenseEnv
+from game.entities.tower import SingleTargetTower
+from game.game_info import TowerInfo
 import time
+import math
 
 def test_base_visualization():
     """Show the base at different health levels"""
@@ -52,5 +48,38 @@ def test_base_visualization():
     print("  • ORANGE (33-66%): Damaged base")
     print("  • RED (<33%): Critical base")
 
+def test_tower_visualization():    
+    """Show the tower at different levels"""
+    
+    env = TowerDefenseEnv(render_mode='human', num_enemies=3)
+    state, info = env.reset()
+    n = env.size
+    pos = n - math.floor(n/2), n - math.floor(n/2)
+    tower = SingleTargetTower(pos=pos)
+    env.add_tower_to_grid(tower)
+    
+    print("=== TOWER VISUALIZATION TEST ===")
+    print(f"Tower location: {tower.pos}")
+    print(f"Starting level: {tower.level}")
+    print()
+    
+    # Show initial state
+    for i in range(TowerInfo.MAX_LEVEL):
+        print(f"Showing tower at level {i}, damage is {tower.damage}")
+        env.render()
+        time.sleep(2)
+        tower.level_up()
+    
+    env.close()
+    print("\n✓ Visualization test complete!")
+    print("\nTower level up indicators:")
+    print("  • 1: Level 1")
+    print("  • 2: Level 2")
+    print("  • 3: Level 3")
+    print("  • 4: Level 4")
+    print("  • 5: Level 5")
+
+
 if __name__ == "__main__":
-    test_base_visualization()
+    # test_base_visualization()
+    test_tower_visualization()

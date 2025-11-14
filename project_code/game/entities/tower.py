@@ -3,6 +3,11 @@ from game.game_info import TowerInfo
 class Tower:
     """
         Defines a tower 
+        Level 1 to 2: 10 kills
+        Level 2 to 3: 20 more kills (30 total)
+        Level 3 to 4: 30 more kills (60 total)
+        Level 4 to 5: 40 more kills (100 total)
+        Maximum level is 5
     """
     def __init__(self, pos, health, damage, range, cost):
         self.health = health
@@ -11,6 +16,9 @@ class Tower:
         self.pos = pos
         self.range = range
         self.cost = cost
+
+        self.level = 1
+        self.kills = 0
 
     def attack(self, enemies):
         for enemy in enemies:
@@ -24,6 +32,9 @@ class Tower:
                 (ex == x and abs(ex-x) <= self.range)
             ):
                 enemy.take_damage(self.damage)
+                if enemy.is_dead():
+                    self.killed_enemy()
+
                 return [enemy]
         return []
     
@@ -38,6 +49,18 @@ class Tower:
     
     def respawn(self):
         self.health = self.original_health
+
+    def level_up(self):
+        if self.level < TowerInfo.MAX_LEVEL:
+            self.level += 1
+            # Increment damage by LEVEL_DAMAGE_DELTA % of current damage
+            self.damage += TowerInfo.LEVEL_DAMAGE_DELTA * self.damage
+
+    def killed_enemy(self):
+        self.kills += 1
+        if self.kills > (self.level * TowerInfo.LEVEL_KILLS_DELTA): # Check if reached next level
+            self.level_up()
+
 
 class SingleTargetTower(Tower):
     """

@@ -1,4 +1,5 @@
 from game.game_info import EnemyInfo
+import random
 
 class Enemy:
     """
@@ -19,6 +20,12 @@ class Enemy:
         return []
     
     def move(self):
+
+        # Some of the time, idle (don't move)
+        p = random.random() 
+        if p < EnemyInfo.IDLE_P:
+            return False
+        
         next_idx = self.path.index(self.pos) + 1
         if next_idx < len(self.path):
             self.pos = self.path[next_idx]

@@ -23,8 +23,9 @@ from game.entities.base import Base
         - Handle base destroyed -- DONE
         - Add additional towers
         - Add multiple enemies
-        - Add tower level up mechanism
+        - Add tower level up mechanism -- DONE
         - Update UI to have HP -- DONE
+        - Update UI to have tower level -- DONE
         - Additional algos
         - Add money logic
         etc., 
@@ -59,7 +60,6 @@ class Phase(StrEnum):
     """Used to specify the current phase"""
     BUILD = "build"
     DEFEND = "defend"
-
 
 
 class TowerDefenseEnv(gym.Env):
@@ -178,7 +178,6 @@ class TowerDefenseEnv(gym.Env):
         terminated = False
         truncated = False
         e_defeated = 0
-        t_defeated= 0
 
         # Beginning of wave
         if self.phase == Phase.BUILD:
@@ -193,7 +192,7 @@ class TowerDefenseEnv(gym.Env):
 
             while (not wave_terminated) and self.wave_count < self.max_waves:
 
-                reward, wave_terminated, e_defeated, t_defeated = self._defense_phase_step()
+                reward, wave_terminated, e_defeated = self._defense_phase_step()
                 cumulative_reward += reward
 
                 if self.render_mode == "human": # Render wave
@@ -218,8 +217,7 @@ class TowerDefenseEnv(gym.Env):
             "phase": self.phase, 
             "wave": self.wave_count, 
             "enemies_destroyed": e_defeated, 
-            "towers_destroyed": t_defeated, 
-            "base_destroyed ": self.base.is_dead(),
+            "base_destroyed": self.base.is_dead(),
             "base_health": self.base.health,
             "base_start_health": self.base.original_health
         }
@@ -284,7 +282,6 @@ class TowerDefenseEnv(gym.Env):
         wave_terminated = False
         e_defeated = 0
         e_damaged = 0
-        t_defeated = 0
         enemies_to_remove = []
 
         # Move enemies along the path (they don't interact with towers while moving)
@@ -304,7 +301,7 @@ class TowerDefenseEnv(gym.Env):
         if self.base.is_dead():
             reward += Reward.BASE_DESTROYED  # additional penalty
             wave_terminated = True
-            return reward, wave_terminated, e_defeated, t_defeated
+            return reward, wave_terminated, e_defeated 
 
         # Towers attack 
         for (ty, tx), tower in self.towers.items():
@@ -315,13 +312,6 @@ class TowerDefenseEnv(gym.Env):
         e_count = len(self.enemies)
         self.enemies = [e for e in self.enemies if not e.is_dead()]
         e_defeated = e_count - len(self.enemies)
-
-        # NOTE: Remove dead towers - towers don't take damage now
-        # t_count = len(self.towers.keys())
-        # dead_positions = [pos for pos, t in self.towers.items() if t.is_dead()]
-        # for pos in dead_positions:
-        #     del self.towers[pos]
-        # t_defeated = t_count - len(self.towers.keys())
 
         self._reset_grid()
         self._update_grid() 
@@ -334,7 +324,7 @@ class TowerDefenseEnv(gym.Env):
             e_defeated * Reward.ENEMY_DEFEATED
         )
 
-        return reward, wave_terminated, e_defeated, t_defeated
+        return reward, wave_terminated, e_defeated 
 
 
     def _get_obs(self, as_tuple=True):
@@ -367,136 +357,7 @@ class TowerDefenseEnv(gym.Env):
 
     def render(self):
         """ Renders current state to pygame display """
-        return self._render_frame()
-
-
-    def _render_frame(self):
-        """ Draws current state to pygame display """
-        if self.render_mode != "human":
-            return
-        
-        cell_size = 80
-        sidebar_width = 200
-        window_size = self.size * cell_size
-
-        if self.window is None: # initialize
-            pygame.init()
-            self.window = pygame.display.set_mode((window_size + sidebar_width, window_size))
-            pygame.display.set_caption(ENV_NAME)
-            self.font = pygame.font.SysFont("consolas", 16)
-
-        if self.clock is None:
-            self.clock = pygame.time.Clock()
-        
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.close()
-                return
-
-        canvas = pygame.Surface((window_size, window_size))
-        canvas.fill((255, 255, 255))
-
-        color_map = {
-            GridCell.TOWER: (69, 203, 133),  # tower
-            GridCell.ENEMY: (200, 0, 0),     # enemy
-            GridCell.BASE: (0, 255, 180),    # base 
-            GridCell.PATH: (150, 150, 150),  # path
-            GridCell.EMPTY: (240, 240, 240), # empty
-        }
-
-        # Draw the grid
-        for y in range(self.size):
-            for x in range(self.size):
-
-                if self.grid[y, x, GridCell.BASE] == GridCell.BASE: # draw base
-                    # Color base based on health (green -> yellow -> red)
-                    health_ratio = self.base.health_ratio()
-                    if health_ratio > 0.66:
-                        base_color = (0, 100, 200)  # Blue when healthy
-                    elif health_ratio > 0.33:
-                        base_color = (200, 150, 0)  # Orange when damaged
-                    else:
-                        base_color = (200, 0, 0)    # Red when critical
-                    pygame.draw.rect(canvas, base_color, pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
-
-                elif self.grid[y, x, GridCell.PATH] == GridCell.PATH: # draw path
-                    pygame.draw.rect(canvas, color_map[GridCell.PATH], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
-
-                else: # draw empty square
-                    pygame.draw.rect(canvas, color_map[GridCell.EMPTY], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
-
-                
-                if self.grid[y, x, GridCell.ENEMY] == GridCell.ENEMY: # Draw enemy
-                    cell_x = x * cell_size
-                    cell_y = y * cell_size
-                    color = color_map[GridCell.ENEMY] 
-                    pygame.draw.line(canvas, color, (cell_x, cell_y), (cell_x + cell_size, cell_y + cell_size), 4) # Draw an X shape (two diagonal lines)
-                    pygame.draw.line(canvas, color, (cell_x + cell_size, cell_y), (cell_x, cell_y + cell_size), 4)
-                    # pygame.draw.rect(canvas, color_map[GridCell.ENEMY], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
-
-                if self.grid[y, x, GridCell.TOWER] == GridCell.TOWER: # Draw tower
-                    pygame.draw.circle(
-                        canvas,
-                        color_map[GridCell.TOWER],
-                        (x*cell_size + cell_size//2, y*cell_size + cell_size//2),
-                        cell_size//3
-                    )
-
-        # Draw grid lines
-        for i in range(self.size + 1):
-            pygame.draw.line(canvas, (0, 0, 0), (i*cell_size, 0), (i*cell_size, window_size))
-            pygame.draw.line(canvas, (0, 0, 0), (0, i*cell_size), (window_size, i*cell_size))
-
-        # Draw base border (thick border to highlight it)
-        by, bx = self.base.pos
-        pygame.draw.rect(canvas, (255, 255, 255), 
-                        pygame.Rect(bx*cell_size, by*cell_size, cell_size, cell_size), 
-                        width=4)  # Thick white border
-
-        # Draw base health text
-        # Draw "BASE" label
-        font_label = pygame.font.Font(None, 28)
-        label_surface = font_label.render("BASE", True, (255, 255, 255))
-        label_rect = label_surface.get_rect(center=(bx*cell_size + cell_size//2, by*cell_size + cell_size//2 - 15))
-        canvas.blit(label_surface, label_rect)
-        
-        # Draw health ratio
-        font_health = pygame.font.Font(None, 32)
-        health_text = f"{self.base.health}/{self.base.original_health}"
-        text_surface = font_health.render(health_text, True, (255, 255, 255))
-        text_rect = text_surface.get_rect(center=(bx*cell_size + cell_size//2, by*cell_size + cell_size//2 + 12))
-        canvas.blit(text_surface, text_rect)
-
-        # Draw grid on window
-        self.window.blit(canvas, (0, 0))
-
-        # Draw sidebar on the window
-        sidebar_width = 200
-        sidebar_x = self.size * cell_size
-        sidebar_y = self.size * cell_size
-
-        # Sidebar background
-        pygame.draw.rect(self.window, (255, 255, 255), pygame.Rect(sidebar_x, 0, sidebar_width, sidebar_y))
-
-        # Sidebar border
-        pygame.draw.line(self.window, (100, 100, 100), (sidebar_x, 0), (sidebar_x, sidebar_y), 2)
-
-        # Render text
-        title = self.font.render("Tower Defense RL", True, (27, 32, 33))
-        episode = self.font.render(f"Episode: {self.current_episode}", True, (27, 32, 33))
-        wave = self.font.render(f"Wave: {self.wave_count + 1}", True, (27, 32, 33))
-        reward = self.font.render(f"TReward: {self.total_reward:.2f}", True, (27, 32, 33))
-        avg_reward = self.font.render(f"Avg Reward: {self.total_reward if self.current_episode == 0 else (self.total_reward / self.current_episode):.2f}", True, (27, 32, 33))
-
-        # Draw Stats
-        self.window.blit(title, (sidebar_x + 15, 20))
-        self.window.blit(episode, (sidebar_x + 15, 60))
-        self.window.blit(wave, (sidebar_x + 15, 90))
-        self.window.blit(reward, (sidebar_x + 15, 120))
-        self.window.blit(avg_reward, (sidebar_x + 15, 150))
-
-        pygame.display.flip()
-        self.clock.tick(self.metadata["render_fps"])
+        return self._render_frame() 
  
 
     def close(self):
@@ -534,6 +395,11 @@ class TowerDefenseEnv(gym.Env):
             r += gap
             left_to_right = not left_to_right
         return path
+    
+    def add_tower_to_grid(self, tower):
+        """Add a tower object to the grid"""
+        self.towers[tower.pos] = tower
+        self._update_grid()
 
     
     def _generate_enemy_path(self, n: int, goal: tuple[int, int]):
@@ -601,3 +467,153 @@ class TowerDefenseEnv(gym.Env):
         """
         # divmod(action, n) converts the flat action index into a 2D grid coordinate (y, x).
         return divmod(action, n)
+
+    
+    def _render_frame(self):
+        """ Draws current state to pygame display """
+        if self.render_mode != "human":
+            return
+        
+        cell_size = 80
+        sidebar_width = 200
+        window_size = self.size * cell_size
+
+        if self.window is None: # initialize
+            pygame.init()
+            self.window = pygame.display.set_mode((window_size + sidebar_width, window_size))
+            pygame.display.set_caption(ENV_NAME)
+            self.font = pygame.font.SysFont("consolas", 16)
+
+        if self.clock is None:
+            self.clock = pygame.time.Clock()
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.close()
+                return
+
+        canvas = pygame.Surface((window_size, window_size))
+        canvas.fill((255, 255, 255))
+
+        color_map = {
+            GridCell.TOWER: (69, 203, 133),  # tower
+            GridCell.ENEMY: (200, 0, 0),     # enemy
+            GridCell.BASE: (0, 255, 180),    # base 
+            GridCell.PATH: (150, 150, 150),  # path
+            GridCell.EMPTY: (240, 240, 240), # empty
+        }
+
+        # Draw the grid
+        for y in range(self.size):
+            for x in range(self.size):
+
+                if self.grid[y, x, GridCell.BASE] == GridCell.BASE: # draw base
+                    # Color base based on health (green -> yellow -> red)
+                    health_ratio = self.base.health_ratio()
+                    if health_ratio > 0.66:
+                        base_color = (0, 100, 200)  # Blue when healthy
+                    elif health_ratio > 0.33:
+                        base_color = (200, 150, 0)  # Orange when damaged
+                    else:
+                        base_color = (200, 0, 0)    # Red when critical
+                    pygame.draw.rect(canvas, base_color, pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
+
+                elif self.grid[y, x, GridCell.PATH] == GridCell.PATH: # draw path
+                    pygame.draw.rect(canvas, color_map[GridCell.PATH], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
+
+                else: # draw empty square
+                    pygame.draw.rect(canvas, color_map[GridCell.EMPTY], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
+
+                
+                if self.grid[y, x, GridCell.ENEMY] == GridCell.ENEMY: # Draw enemy
+                    cell_x = x * cell_size
+                    cell_y = y * cell_size
+                    color = color_map[GridCell.ENEMY] 
+                    pygame.draw.line(canvas, color, (cell_x, cell_y), (cell_x + cell_size, cell_y + cell_size), 4) # Draw an X shape (two diagonal lines)
+                    pygame.draw.line(canvas, color, (cell_x + cell_size, cell_y), (cell_x, cell_y + cell_size), 4)
+                    # pygame.draw.rect(canvas, color_map[GridCell.ENEMY], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
+
+                if self.grid[y, x, GridCell.TOWER] == GridCell.TOWER: # Draw tower
+                    center = (x*cell_size + cell_size//2, y*cell_size + cell_size//2)
+
+                    pygame.draw.circle(
+                        canvas,
+                        color_map[GridCell.TOWER],
+                        center,
+                        cell_size//3
+                    )
+
+                    # Draw tower level & damage it can deal
+                    tower = self.towers.get((y, x), None)
+                    if tower is not None:
+                        # Tower level
+                        level_text = str(tower.level)
+                        font_level = pygame.font.SysFont("consolas", 18, bold=True)
+                        lvl_surface = font_level.render(level_text, True, (0, 0, 0))
+                        lvl_rect = lvl_surface.get_rect(center=(center[0], center[1] - 4))
+                        canvas.blit(lvl_surface, lvl_rect)
+
+                        # Damage
+                        dmg_text = f"{float(tower.damage):.2f}"
+                        font_dmg = pygame.font.SysFont("consolas", 12, bold=False)
+                        dmg_surface = font_dmg.render(dmg_text, True, (0, 0, 0))
+                        dmg_rect = dmg_surface.get_rect(center=(center[0], center[1] + 12))
+                        canvas.blit(dmg_surface, dmg_rect)
+                    else:
+                        print(f"Could not find tower")
+
+        # Draw grid lines
+        for i in range(self.size + 1):
+            pygame.draw.line(canvas, (0, 0, 0), (i*cell_size, 0), (i*cell_size, window_size))
+            pygame.draw.line(canvas, (0, 0, 0), (0, i*cell_size), (window_size, i*cell_size))
+
+        # Draw base border (thick border to highlight it)
+        by, bx = self.base.pos
+        pygame.draw.rect(canvas, (255, 255, 255), 
+                        pygame.Rect(bx*cell_size, by*cell_size, cell_size, cell_size), 
+                        width=4)  # Thick white border
+
+        # Draw base health text
+        # Draw "BASE" label
+        font_label = pygame.font.Font(None, 28)
+        label_surface = font_label.render("BASE", True, (255, 255, 255))
+        label_rect = label_surface.get_rect(center=(bx*cell_size + cell_size//2, by*cell_size + cell_size//2 - 15))
+        canvas.blit(label_surface, label_rect)
+        
+        # Draw health ratio
+        font_health = pygame.font.Font(None, 32)
+        health_text = f"{self.base.health}/{self.base.original_health}"
+        text_surface = font_health.render(health_text, True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=(bx*cell_size + cell_size//2, by*cell_size + cell_size//2 + 12))
+        canvas.blit(text_surface, text_rect)
+
+        # Draw grid on window
+        self.window.blit(canvas, (0, 0))
+
+        # Draw sidebar on the window
+        sidebar_width = 200
+        sidebar_x = self.size * cell_size
+        sidebar_y = self.size * cell_size
+
+        # Sidebar background
+        pygame.draw.rect(self.window, (255, 255, 255), pygame.Rect(sidebar_x, 0, sidebar_width, sidebar_y))
+
+        # Sidebar border
+        pygame.draw.line(self.window, (100, 100, 100), (sidebar_x, 0), (sidebar_x, sidebar_y), 2)
+
+        # Render text
+        title = self.font.render("Tower Defense RL", True, (27, 32, 33))
+        episode = self.font.render(f"Episode: {self.current_episode}", True, (27, 32, 33))
+        wave = self.font.render(f"Wave: {self.wave_count + 1}", True, (27, 32, 33))
+        reward = self.font.render(f"TReward: {self.total_reward:.2f}", True, (27, 32, 33))
+        avg_reward = self.font.render(f"Avg Reward: {self.total_reward if self.current_episode == 0 else (self.total_reward / self.current_episode):.2f}", True, (27, 32, 33))
+
+        # Draw Stats
+        self.window.blit(title, (sidebar_x + 15, 20))
+        self.window.blit(episode, (sidebar_x + 15, 60))
+        self.window.blit(wave, (sidebar_x + 15, 90))
+        self.window.blit(reward, (sidebar_x + 15, 120))
+        self.window.blit(avg_reward, (sidebar_x + 15, 150))
+
+        pygame.display.flip()
+        self.clock.tick(self.metadata["render_fps"])

@@ -17,6 +17,7 @@ class EnemyInfo:
     
     HEALTH: int = 13
     DAMAGE: int = 3
+    IDLE_P: float = 0.1 # probability of not moving is X% of the time
     # LEAK: int = 10
 
 @dataclass(frozen=True)
@@ -24,6 +25,9 @@ class TowerInfo:
     MAX_HEALTH: int = 56
     MAX_DAMAGE: int = 8
     MAX_COST: int = 130
+    MAX_LEVEL: int = 5
+    LEVEL_KILLS_DELTA: int = 10 # number of kills required between levels
+    LEVEL_DAMAGE_DELTA: float = 0.15 # percentage to increase damage by between levels
     
     SINGLE_TARGET_HEALTH: int = 28
     SINGLE_TARGET_DAMAGE: int = 4
