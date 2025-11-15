@@ -1,4 +1,5 @@
 from game.game_info import TowerInfo
+import math
 
 class Tower:
     """
@@ -11,14 +12,24 @@ class Tower:
     """
     _id_counter = 1
     _id_map = {}
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # Register subclass as soon as it is defined
+        if cls not in Tower._id_map:
+            Tower._id_map[cls] = Tower._id_counter
+            Tower._id_counter += 1
 
     @classmethod
     def get_id(cls):
-        """Generate ids for tower classes"""
-        if cls not in cls._id_map:
-            cls._id_map[cls] = Tower._id_counter
-            Tower._id_counter += 1
-        return cls._id_map[cls]
+        return Tower._id_map[cls]
+
+    @classmethod
+    def get_num_types(cls):
+        return len(cls._id_map)
+    
+    @classmethod
+    def get_ids(cls):
+        return cls._id_map
         
     def __init__(self, pos, health, damage, range, cost):
         self.health = health
@@ -63,7 +74,7 @@ class Tower:
         if self.level < TowerInfo.MAX_LEVEL:
             self.level += 1
             # Increment damage by LEVEL_DAMAGE_DELTA % of current damage
-            self.damage += TowerInfo.LEVEL_DAMAGE_DELTA * self.damage
+            self.damage += math.ceil(TowerInfo.LEVEL_DAMAGE_DELTA * self.damage)
             return True
         return False
 
@@ -73,6 +84,9 @@ class Tower:
         if self.kills > self.level * TowerInfo.LEVEL_KILLS_DELTA:
             return self.level_up()
         return False
+    
+    def get_color(self):
+        return (0, 0, 0) # default tower color
 
 
 class SingleTargetTower(Tower):
@@ -86,6 +100,9 @@ class SingleTargetTower(Tower):
                  range=TowerInfo.SINGLE_TARGET_RANGE, 
                  cost=TowerInfo.SINGLE_TARGET_COST):
         super().__init__(pos, health, damage, range, cost)
+
+    def get_color(self):
+        return (69, 203, 133) 
 
 
 class AoETower(Tower):
@@ -117,5 +134,8 @@ class AoETower(Tower):
         for enemy in affected:
             enemy.take_damage(self.damage)
         return affected
+    
+    def get_color(self):
+        return (255, 140, 0)
 
 

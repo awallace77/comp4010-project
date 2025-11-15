@@ -32,7 +32,7 @@ class TowerInfo:
     
     SINGLE_TARGET_HEALTH: int = 28
     SINGLE_TARGET_DAMAGE: int = 4
-    SINGLE_TARGET_RANGE: int = 2
+    SINGLE_TARGET_RANGE: int = 3
     SINGLE_TARGET_COST: int = 50
 
     AOE_HEALTH: int = 28
