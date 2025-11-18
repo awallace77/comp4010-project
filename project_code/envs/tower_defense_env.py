@@ -6,8 +6,9 @@ from game.game_info import TowerInfo, EnemyInfo, BaseInfo, BudgetInfo
 from enum import IntEnum, StrEnum
 from dataclasses import dataclass
 from game.entities.enemy import Enemy
-from game.entities.tower import SingleTargetTower, Tower
+from game.entities.tower import SingleTargetTower, AoETower, Tower
 from game.entities.base import Base
+import math
 """
     COMP4010: Intro to RL
     Project Environment Demo
@@ -126,24 +127,19 @@ class TowerDefenseEnv(gym.Env):
         # Action space setup
         # 0 = do nothing, others = place tower at specific cell
         # TODO: Update to enable moving towers/placing multiple towers in accordance to budget at beginning of wave
-        self.action_space = spaces.Discrete(size * size + 1) 
+        self.action_space = spaces.Discrete(2*(size * size) + 1) 
 
         # Observation (state space) setup 
-        '''A 3d array (matrix n x n x len(GridCell) - 1) where [i, j, k]: 
+        '''A 3d array (n x n x 8) where [i, j, k]: 
             # i = the row (y)
             # j = the column (x)
-            # k = information for tower hp, enemy hp, path, and base hp
-            i.e., 
-                k[0] = tower hp if tower exists at [i,j]
-                k[1] = enemy hp if enemy exists at [i,j]
-                k[2] = base hp if base exists at [i,j]
-                k[3] = 3 if path, 0 otherwise
+            # k = information for cell (see _get_obs for more details)
         '''
         self.observation_space = spaces.Dict({
             "grid": spaces.Box( # Grid info
                 low=0,
-                high=max(TowerInfo.MAX_HEALTH, EnemyInfo.MAX_HEALTH, BaseInfo.MAX_HEALTH, GridCell.PATH),
-                shape=(self.size, self.size, len(GridCell) - 1),
+                high=max(TowerInfo.MAX_LEVEL, EnemyInfo.MAX_HEALTH, BaseInfo.MAX_HEALTH),
+                shape=(self.size, self.size, 8),
                 dtype=int
             ),
             "budget": spaces.Box( # Current Budget
@@ -247,17 +243,24 @@ class TowerDefenseEnv(gym.Env):
         """
             Handles beginning of wave actions
             Args:
-                action: the initial action chosen in [0, size]
+                action: the initial action chosen in [0, 2*size*size]
             Returns:
                 A build phase reward
         """
+        # Action can now be [0, 2*size*size]
+        original_action = action
         reward = 0
+
         if action == 0:
             # TODO: Small neg reward for doing nothing?
             return reward
 
         # Map action number to grid position 
         action -= 1  # get rid of 0 because 0 is "do nothing"
+
+        if action >= self.size * self.size:
+            action = math.floor(action / 2)
+
         y, x = self._action_to_coordinate(self.size, action)
 
         # TODO: add option to place multiple towers based on current budget
@@ -266,8 +269,12 @@ class TowerDefenseEnv(gym.Env):
 
         # Place (create) tower if valid - must not be on path or already have a tower
         if (y, x) != self.base.pos and (y, x) not in self.path and self.grid[y, x, GridCell.TOWER] != GridCell.TOWER: 
-            # TODO: Add option for AoE tower w budget constraints
-            tower = SingleTargetTower(pos=(y,x), health=TowerInfo.SINGLE_TARGET_HEALTH)
+
+            if original_action >= self.size * self.size:
+                tower = SingleTargetTower(pos=(y,x), health=TowerInfo.SINGLE_TARGET_HEALTH)
+            else:
+                tower = AoETower(pos=(y,x), health=TowerInfo.AOE_HEALTH)
+
             self.towers[tower.pos] = tower 
             self.grid[y, x, GridCell.TOWER] = GridCell.TOWER
             
@@ -356,25 +363,30 @@ class TowerDefenseEnv(gym.Env):
 
     def _get_obs(self, as_tuple=True):
         """Returns the current observation (state)"""
-        obs = np.zeros((self.size, self.size, len(GridCell) - 1), dtype=int)
+        obs = np.zeros((self.size, self.size, 8), dtype=int)
         
-        # Layer 0: Towers (HP)
+        # Tower info
         for (y, x), tower in self.towers.items():
-            obs[y, x, GridCell.TOWER] = tower.health
+            obs[y, x, 0] = tower.get_id()
+            obs[y, x, 1] = tower.level
         
-        # Layer 1: Enemies (HP)
+        # Enemy info
         for enemy in self.enemies:
             y, x = enemy.pos
-            obs[y, x, GridCell.ENEMY] = enemy.health
+            obs[y, x, 2] += 1 # num_enemies 
+            # obs[y, x, 3].append(enemy.get_id()) # types of enemies TODO: If adding different enemies, update state
+            obs[y, x, 3] = (obs[y, x, 3] + enemy.health) / obs[y, x, 2] # avg enemy health
+            obs[y, x, 4] = max(obs[y, x, 4], enemy.health) # max hp of enemies
 
             # Layer 3: Path
             for py, px in enemy.path:
-                obs[py, px, GridCell.PATH] = GridCell.PATH
+                obs[py, px, 5] = 1 # enemy path
 
         # Layer 2: Base
         if self.base is not None:
             y, x = self.base.pos
-            obs[y, x, GridCell.BASE] = self.base.health
+            obs[y, x, 6] = 1  # base or not
+            obs[y, x, 7] = self.base.health  # base health 
 
         if as_tuple:
             return self.state_to_key(obs)
@@ -470,8 +482,8 @@ class TowerDefenseEnv(gym.Env):
 
     def _update_grid(self):
         """ Update grid with current info """
-        for (ty, tx) in self.towers.keys(): # Update towers on grid
-            self.grid[ty, tx, GridCell.TOWER] = GridCell.TOWER
+        for (ty, tx), tower in self.towers.items(): # Update towers on grid
+            self.grid[ty, tx, GridCell.TOWER] = GridCell.TOWER # type of tower
         
         for enemy in self.enemies: # Update enemies on grid
             y, x = enemy.pos
@@ -559,20 +571,23 @@ class TowerDefenseEnv(gym.Env):
                     pygame.draw.line(canvas, color, (cell_x, cell_y), (cell_x + cell_size, cell_y + cell_size), 4) # Draw an X shape (two diagonal lines)
                     pygame.draw.line(canvas, color, (cell_x + cell_size, cell_y), (cell_x, cell_y + cell_size), 4)
                     # pygame.draw.rect(canvas, color_map[GridCell.ENEMY], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
-
+                
+                # Different tower types
                 if self.grid[y, x, GridCell.TOWER] == GridCell.TOWER: # Draw tower
                     center = (x*cell_size + cell_size//2, y*cell_size + cell_size//2)
-
-                    pygame.draw.circle(
-                        canvas,
-                        color_map[GridCell.TOWER],
-                        center,
-                        cell_size//3
-                    )
+                    tower = self.towers.get((y, x))
 
                     # Draw tower level & damage it can deal
-                    tower = self.towers.get((y, x), None)
                     if tower is not None:
+
+                        # Tower indicator
+                        pygame.draw.circle(
+                            canvas,
+                            tower.get_color(),
+                            center,
+                            cell_size//3
+                        )
+
                         # Tower level
                         level_text = str(tower.level)
                         font_level = pygame.font.SysFont("consolas", 18, bold=True)
