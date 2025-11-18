@@ -19,6 +19,7 @@ class EnemyInfo:
     DAMAGE: int = 3
     IDLE_P: float = 0.1 # probability of not moving is X% of the time
     # LEAK: int = 10
+    KILL_PAYOUT: int = 10 # the "coins" received after a kill
 
 @dataclass(frozen=True)
 class TowerInfo:
@@ -28,7 +29,6 @@ class TowerInfo:
     MAX_LEVEL: int = 5
     LEVEL_KILLS_DELTA: int = 10 # number of kills required between levels
     LEVEL_DAMAGE_DELTA: float = 0.15 # percentage to increase damage by between levels
-    KILL_PAYOUT: int = 10 # the "coins" received after a kill
     
     SINGLE_TARGET_HEALTH: int = 28
     SINGLE_TARGET_DAMAGE: int = 4
