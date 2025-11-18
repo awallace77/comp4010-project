@@ -1,9 +1,21 @@
 from game.game_info import EnemyInfo
+import random
 
 class Enemy:
     """
         Defines an enemy
-    """
+    """    
+    _id_counter = 1
+    _id_map = {}
+
+    @classmethod
+    def get_id(cls):
+        """Generate ids for enemy classes"""
+        if cls not in cls._id_map:
+            cls._id_map[cls] = Enemy._id_counter
+            Enemy._id_counter += 1
+        return cls._id_map[cls]
+
     def __init__(self, pos, path, health=EnemyInfo.HEALTH, damage=EnemyInfo.DAMAGE):
         self.pos = pos
         self.path = path # assumed valid path to base
@@ -19,6 +31,12 @@ class Enemy:
         return []
     
     def move(self):
+
+        # Some of the time, idle (don't move)
+        p = random.random() 
+        if p < EnemyInfo.IDLE_P:
+            return False
+        
         next_idx = self.path.index(self.pos) + 1
         if next_idx < len(self.path):
             self.pos = self.path[next_idx]

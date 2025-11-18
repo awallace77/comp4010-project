@@ -2,7 +2,7 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 import pygame
-from game.game_info import TowerInfo, EnemyInfo, BaseInfo
+from game.game_info import TowerInfo, EnemyInfo, BaseInfo, BudgetInfo
 from enum import IntEnum, StrEnum
 from dataclasses import dataclass
 from game.entities.enemy import Enemy
@@ -19,15 +19,20 @@ from game.entities.base import Base
 """
 
 '''
-    TODO:
-        - Handle base destroyed -- DONE
-        - Add additional towers
-        - Add multiple enemies
-        - Add tower level up mechanism
-        - Update UI to have HP -- DONE
-        - Additional algos
-        - Add money logic
+    General TODOs:
+        - DONE: Handle base destroyed
+        - DONE: Update UI to have HP
+        - TODO: Add Additional RL algos (from libraries)
         etc., 
+
+        Andrew TODOs:
+            - DONE: Add additional towers
+            - DONE: Add multiple enemies
+            - DONE: Add tower level up mechanism -- DONE
+            - DONE: Update UI to have tower levels and damage
+            - TODO: Update state to handle multiple towers and enemies
+            - TODO: Add money/budget logic
+            - TODO: Allow for placing multiple towers and moving existing towers
 '''
 
 ENV_NAME = "RL Tower Defense | COMP4010 - Group 12"
@@ -61,7 +66,6 @@ class Phase(StrEnum):
     DEFEND = "defend"
 
 
-
 class TowerDefenseEnv(gym.Env):
     """
         The tower defense environment is an nxn grid consisting of towers, enemies, a base, and paths for the enemies to take to the base.
@@ -69,7 +73,14 @@ class TowerDefenseEnv(gym.Env):
     """
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 20}
 
-    def __init__(self, render_mode=None, size=5, num_enemies=1, max_waves=10, render_rate=100):
+    def __init__(
+            self,  
+            size=5, 
+            num_enemies=1,
+            max_waves=10, 
+            render_mode=None,
+            render_rate=100
+        ):
 
         # General setup
         self.size = size
@@ -86,6 +97,10 @@ class TowerDefenseEnv(gym.Env):
         self.phase = Phase.BUILD
         self.total_reward = 0
         self.current_episode = 0
+
+        # Budget setup
+        self.start_budget = BudgetInfo.BUDGET
+        self.budget = BudgetInfo.BUDGET
         
         # Grid setup
         #[i, j, k] - i, j is (row, col), 
@@ -110,7 +125,8 @@ class TowerDefenseEnv(gym.Env):
 
         # Action space setup
         # 0 = do nothing, others = place tower at specific cell
-        self.action_space = spaces.Discrete(size * size + 1) # TODO: Update to enable moving towers at beginning of wave
+        # TODO: Update to enable moving towers/placing multiple towers in accordance to budget at beginning of wave
+        self.action_space = spaces.Discrete(size * size + 1) 
 
         # Observation (state space) setup 
         '''A 3d array (matrix n x n x len(GridCell) - 1) where [i, j, k]: 
@@ -132,7 +148,7 @@ class TowerDefenseEnv(gym.Env):
             ),
             "budget": spaces.Box( # Current Budget
                 low=0,
-                high=MAX_INT,
+                high=BudgetInfo.MAX_BUDGET,
                 shape=(1,),
                 dtype=int
             )
@@ -156,6 +172,7 @@ class TowerDefenseEnv(gym.Env):
         self.phase = Phase.BUILD
         self.wave_count = 0
         self.current_episode += 1
+        self.budget = self.start_budget
         self._update_grid()
 
         return self._get_obs(), {}
@@ -178,7 +195,6 @@ class TowerDefenseEnv(gym.Env):
         terminated = False
         truncated = False
         e_defeated = 0
-        t_defeated= 0
 
         # Beginning of wave
         if self.phase == Phase.BUILD:
@@ -193,7 +209,7 @@ class TowerDefenseEnv(gym.Env):
 
             while (not wave_terminated) and self.wave_count < self.max_waves:
 
-                reward, wave_terminated, e_defeated, t_defeated = self._defense_phase_step()
+                reward, wave_terminated, e_defeated = self._defense_phase_step()
                 cumulative_reward += reward
 
                 if self.render_mode == "human": # Render wave
@@ -218,8 +234,7 @@ class TowerDefenseEnv(gym.Env):
             "phase": self.phase, 
             "wave": self.wave_count, 
             "enemies_destroyed": e_defeated, 
-            "towers_destroyed": t_defeated, 
-            "base_destroyed ": self.base.is_dead(),
+            "base_destroyed": self.base.is_dead(),
             "base_health": self.base.health,
             "base_start_health": self.base.original_health
         }
@@ -244,6 +259,10 @@ class TowerDefenseEnv(gym.Env):
         # Map action number to grid position 
         action -= 1  # get rid of 0 because 0 is "do nothing"
         y, x = self._action_to_coordinate(self.size, action)
+
+        # TODO: add option to place multiple towers based on current budget
+        # Need to encode an action to include number of towers and type of tower
+        # ()
 
         # Place (create) tower if valid - must not be on path or already have a tower
         if (y, x) != self.base.pos and (y, x) not in self.path and self.grid[y, x, GridCell.TOWER] != GridCell.TOWER: 
@@ -284,7 +303,6 @@ class TowerDefenseEnv(gym.Env):
         wave_terminated = False
         e_defeated = 0
         e_damaged = 0
-        t_defeated = 0
         enemies_to_remove = []
 
         # Move enemies along the path (they don't interact with towers while moving)
@@ -304,24 +322,23 @@ class TowerDefenseEnv(gym.Env):
         if self.base.is_dead():
             reward += Reward.BASE_DESTROYED  # additional penalty
             wave_terminated = True
-            return reward, wave_terminated, e_defeated, t_defeated
+            return reward, wave_terminated, e_defeated 
 
         # Towers attack 
-        for (ty, tx), tower in self.towers.items():
+        for tower in self.towers.values():
             attacked_enemies = tower.attack(self.enemies)
             e_damaged += len(attacked_enemies)
+
+            for e in attacked_enemies: # level up towers
+                if e.is_dead():
+                    leveled_up = tower.killed_enemy()
+                    if leveled_up: 
+                        reward += Reward.TOWER_LEVEL_UP
 
         # Remove dead enemies
         e_count = len(self.enemies)
         self.enemies = [e for e in self.enemies if not e.is_dead()]
         e_defeated = e_count - len(self.enemies)
-
-        # NOTE: Remove dead towers - towers don't take damage now
-        # t_count = len(self.towers.keys())
-        # dead_positions = [pos for pos, t in self.towers.items() if t.is_dead()]
-        # for pos in dead_positions:
-        #     del self.towers[pos]
-        # t_defeated = t_count - len(self.towers.keys())
 
         self._reset_grid()
         self._update_grid() 
@@ -334,7 +351,7 @@ class TowerDefenseEnv(gym.Env):
             e_defeated * Reward.ENEMY_DEFEATED
         )
 
-        return reward, wave_terminated, e_defeated, t_defeated
+        return reward, wave_terminated, e_defeated 
 
 
     def _get_obs(self, as_tuple=True):
@@ -367,9 +384,118 @@ class TowerDefenseEnv(gym.Env):
 
     def render(self):
         """ Renders current state to pygame display """
-        return self._render_frame()
+        return self._render_frame() 
+ 
+
+    def close(self):
+        """ Closes the environment """
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
+        self.window = None
+
+            
+    def state_to_key(self, obs):
+        """ Converts observation to key """
+        return tuple(obs.flatten().tolist())    
 
 
+    def s_path(self, n: int, gap: int = 2):
+        """    
+            Lays down coordinates for an S shape based on grid size
+            Args:
+                n: the size of the nxn grid
+                gap: the number of rows to skip (including current row)
+            Returns:
+                An array containing an s shaped path of coordinates (row, col)
+        """
+        path = []
+        r = 0
+        left_to_right = True
+        while r < n:
+            if left_to_right:
+                cols = range(0, n)
+            else:
+                cols = range(n - 1, -1, -1)
+            for c in cols:
+                path.append((r, c))
+            r += gap
+            left_to_right = not left_to_right
+        return path
+    
+    def add_tower_to_grid(self, tower):
+        """Add a tower object to the grid"""
+        self.towers[tower.pos] = tower
+        self._update_grid()
+
+    
+    def _generate_enemy_path(self, n: int, goal: tuple[int, int]):
+        """Generate a path from goal to any edge of the grid."""
+        y, x = goal
+        path = [(y, x)]
+        seen = {(y, x)}
+
+        # Define possible movement directions (N, S, E, W)
+        directions = [(-1, 0), (1, 0), (0, 1), (0, -1)]  # up, down, right, left
+
+        def is_edge(y, x):
+            return y == 0 or y == n - 1 or x == 0 or x == n - 1
+
+        def dfs(y, x):
+            if is_edge(y, x):
+                return True
+            
+            np.random.shuffle(directions)  # randomize path structure
+            
+            for dy, dx in directions:
+                ny, nx = y + dy, x + dx
+                if 0 <= ny < n and 0 <= nx < n and (ny, nx) not in seen:
+                    seen.add((ny, nx))
+                    path.append((ny, nx))
+                    if dfs(ny, nx):  # continue until an edge is found
+                        return True
+                    path.pop()  # backtrack if dead end
+            
+            return False  # no valid move found
+
+        dfs(y, x)
+        path.reverse()
+        return path 
+    
+
+    def _reset_grid(self):
+        """ Resets grid to "original" empty state """
+        self.grid = -np.ones((self.size, self.size, len(GridCell) - 1), dtype=int)
+
+
+    def _update_grid(self):
+        """ Update grid with current info """
+        for (ty, tx) in self.towers.keys(): # Update towers on grid
+            self.grid[ty, tx, GridCell.TOWER] = GridCell.TOWER
+        
+        for enemy in self.enemies: # Update enemies on grid
+            y, x = enemy.pos
+            self.grid[y, x, GridCell.ENEMY] = GridCell.ENEMY
+
+            for (py, px) in enemy.path: # Update paths on grid
+                self.grid[py, px, GridCell.PATH] = GridCell.PATH
+
+        if self.base is not None:
+            y, x = self.base.pos 
+            self.grid[y, x, GridCell.BASE] = GridCell.BASE
+
+
+    def _action_to_coordinate(self, n, action):
+        """
+            Maps an action in [0, n) to a coordinate on an nxn grid
+            Args:
+                n: the size of the nxn grid
+                action: the action in [0, n) to take
+        """
+        # divmod(action, n) converts the flat action index into a 2D grid coordinate (y, x).
+        return divmod(action, n)
+
+    
     def _render_frame(self):
         """ Draws current state to pygame display """
         if self.render_mode != "human":
@@ -435,12 +561,33 @@ class TowerDefenseEnv(gym.Env):
                     # pygame.draw.rect(canvas, color_map[GridCell.ENEMY], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
 
                 if self.grid[y, x, GridCell.TOWER] == GridCell.TOWER: # Draw tower
+                    center = (x*cell_size + cell_size//2, y*cell_size + cell_size//2)
+
                     pygame.draw.circle(
                         canvas,
                         color_map[GridCell.TOWER],
-                        (x*cell_size + cell_size//2, y*cell_size + cell_size//2),
+                        center,
                         cell_size//3
                     )
+
+                    # Draw tower level & damage it can deal
+                    tower = self.towers.get((y, x), None)
+                    if tower is not None:
+                        # Tower level
+                        level_text = str(tower.level)
+                        font_level = pygame.font.SysFont("consolas", 18, bold=True)
+                        lvl_surface = font_level.render(level_text, True, (0, 0, 0))
+                        lvl_rect = lvl_surface.get_rect(center=(center[0], center[1] - 4))
+                        canvas.blit(lvl_surface, lvl_rect)
+
+                        # Damage
+                        dmg_text = f"{float(tower.damage):.2f}"
+                        font_dmg = pygame.font.SysFont("consolas", 12, bold=False)
+                        dmg_surface = font_dmg.render(dmg_text, True, (0, 0, 0))
+                        dmg_rect = dmg_surface.get_rect(center=(center[0], center[1] + 12))
+                        canvas.blit(dmg_surface, dmg_rect)
+                    else:
+                        print(f"Could not find tower")
 
         # Draw grid lines
         for i in range(self.size + 1):
@@ -497,107 +644,3 @@ class TowerDefenseEnv(gym.Env):
 
         pygame.display.flip()
         self.clock.tick(self.metadata["render_fps"])
- 
-
-    def close(self):
-        """ Closes the environment """
-        if self.window is not None:
-            pygame.display.quit()
-            pygame.quit()
-        self.window = None
-
-            
-    def state_to_key(self, obs):
-        """ Converts observation to key """
-        return tuple(obs.flatten().tolist())    
-
-
-    def s_path(self, n: int, gap: int = 2):
-        """    
-            Lays down coordinates for an S shape based on grid size
-            Args:
-                n: the size of the nxn grid
-                gap: the number of rows to skip (including current row)
-            Returns:
-                An array containing an s shaped path of coordinates (row, col)
-        """
-        path = []
-        r = 0
-        left_to_right = True
-        while r < n:
-            if left_to_right:
-                cols = range(0, n)
-            else:
-                cols = range(n - 1, -1, -1)
-            for c in cols:
-                path.append((r, c))
-            r += gap
-            left_to_right = not left_to_right
-        return path
-
-    
-    def _generate_enemy_path(self, n: int, goal: tuple[int, int]):
-        """Generate a path from goal to any edge of the grid."""
-        y, x = goal
-        path = [(y, x)]
-        seen = {(y, x)}
-
-        # Define possible movement directions (N, S, E, W)
-        directions = [(-1, 0), (1, 0), (0, 1), (0, -1)]  # up, down, right, left
-
-        def is_edge(y, x):
-            return y == 0 or y == n - 1 or x == 0 or x == n - 1
-
-        def dfs(y, x):
-            if is_edge(y, x):
-                return True
-            
-            np.random.shuffle(directions)  # randomize path structure
-            
-            for dy, dx in directions:
-                ny, nx = y + dy, x + dx
-                if 0 <= ny < n and 0 <= nx < n and (ny, nx) not in seen:
-                    seen.add((ny, nx))
-                    path.append((ny, nx))
-                    if dfs(ny, nx):  # continue until an edge is found
-                        return True
-                    path.pop()  # backtrack if dead end
-            
-            return False  # no valid move found
-
-        dfs(y, x)
-        path.reverse()
-        return path 
-    
-
-    def _reset_grid(self):
-        """ Resets grid to "original" empty state """
-        self.grid = -np.ones((self.size, self.size, len(GridCell) - 1), dtype=int)
-
-
-    def _update_grid(self):
-        """ Update grid with current info """
-        for (ty, tx), tower in self.towers.items(): # Update towers on grid
-            self.grid[ty, tx, GridCell.TOWER] = GridCell.TOWER
-        
-        for enemy in self.enemies: # Update enemies on grid
-            y, x = enemy.pos
-            self.grid[y, x, GridCell.ENEMY] = GridCell.ENEMY
-
-            for (py, px) in enemy.path: # Update paths on grid
-                self.grid[py, px, GridCell.PATH] = GridCell.PATH
-
-        if self.base is not None:
-            y, x = self.base.pos 
-            self.grid[y, x, GridCell.BASE] = GridCell.BASE
-
-
-    def _action_to_coordinate(self, n, action):
-        """
-            Maps an action in [0, n) to a coordinate on an nxn grid
-            Args:
-                n: the size of the nxn grid
-                action: the action in [0, n) to take
-        """
-        # divmod(action, n) converts the flat action index into a 2D grid coordinate (y, x).
-        return divmod(action, n)
