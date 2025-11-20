@@ -83,6 +83,8 @@ class TowerDefenseEnv(gym.Env):
             render_rate=100
         ):
 
+        self.episode_enemies_defeated = 0
+
         # General setup
         self.size = size
         self.render_mode = render_mode
@@ -170,6 +172,7 @@ class TowerDefenseEnv(gym.Env):
         self.current_episode += 1
         self.budget = self.start_budget
         self._update_grid()
+        self.episode_enemies_defeated = 0
 
         return self._get_obs(), {}
 
@@ -187,49 +190,43 @@ class TowerDefenseEnv(gym.Env):
                   truncated: whether the episode ended due to external constraint
                   info: additional information about the step
         """
-        cumulative_reward = 0 # reward collected from each step within a wave
+        cumulative_reward = 0
         terminated = False
         truncated = False
-        e_defeated = 0
+        total_e_defeated = 0
 
-        # Beginning of wave
+        # Beginning of wave - PLACE TOWERS
         if self.phase == Phase.BUILD:
             cumulative_reward += self._build_phase_step(action)
             self._spawn_enemies()
             self.phase = Phase.DEFEND 
 
-        # During a wave (one wave represents a single step)
+        # During a wave - ONE WAVE AT A TIME
         if self.phase == Phase.DEFEND:
+            reward, wave_terminated, e_defeated = self._defense_phase_step()
+            cumulative_reward += reward
+            self.episode_enemies_defeated += e_defeated
 
-            wave_terminated = False
+            if self.render_mode == "human":
+                self.render()
+                pygame.time.wait(self.render_rate)
 
-            while (not wave_terminated) and self.wave_count < self.max_waves:
-
-                reward, wave_terminated, e_defeated = self._defense_phase_step()
-                cumulative_reward += reward
-
-                if self.render_mode == "human": # Render wave
-                    self.render()
-                    pygame.time.wait(self.render_rate)
-
-                # Wave terminated
-                if wave_terminated:
-                    self.wave_count += 1
-                    self.phase = Phase.BUILD 
-
-        # Terminated conditions (terminates an episode)
-        terminated = False
-        if self.wave_count >= self.max_waves or self.base.is_dead():
-            terminated = True
-            cumulative_reward += ( # Final Rewards
-                (self.wave_count >= self.max_waves) * Reward.ALL_WAVES_CLEARED
-            )
+            # Wave terminated - prepare for next
+            if wave_terminated:
+                self.wave_count += 1
+                self.phase = Phase.BUILD  # Agent can place towers next step()
+ 
+            # Check if game over
+            if self.wave_count >= self.max_waves or self.base.is_dead():
+                terminated = True
+                if self.wave_count >= self.max_waves:
+                    cumulative_reward += Reward.ALL_WAVES_CLEARED
 
         obs = self._get_obs()
         info = {
-            "phase": self.phase, 
-            "wave": self.wave_count, 
-            "enemies_destroyed": e_defeated, 
+            "phase": self.phase,
+            "wave": self.wave_count,
+            "enemies_destroyed": self.episode_enemies_defeated,
             "base_destroyed": self.base.is_dead(),
             "base_health": self.base.health,
             "base_start_health": self.base.original_health
