@@ -50,8 +50,8 @@ class Tower:
 
             # Same row or column and within range
             if(
-                (ey == y and abs(ey-y) <= self.range) or 
-                (ex == x and abs(ex-x) <= self.range)
+                (ey == y and abs(ex-x) <= self.range) or 
+                (ex == x and abs(ey-y) <= self.range)
             ):
                 enemy.take_damage(self.damage)
                 return [enemy]
@@ -127,8 +127,8 @@ class AoETower(Tower):
          
             # Deal damage to multiple enemies (Same row or column and within range)
             if(
-                (ey == y and abs(ey-y) <= self.range) or 
-                (ex == x and abs(ex-x) <= self.range)
+                (ey == y and abs(ex-x) <= self.range) or 
+                (ex == x and abs(ey-y) <= self.range)
             ):
                 affected.append(e)
         for enemy in affected:
