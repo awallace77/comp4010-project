@@ -24,6 +24,8 @@ import math
         - DONE: Handle base destroyed
         - DONE: Update UI to have HP
         - TODO: Add Additional RL algos (from libraries)
+        - TODO: Analysis on different RL algos (a cross comparison or internal analysis of algorithm (e..g, different parameters))
+        - TODO: Evolving wave levels (in difficulty e.g., # enemies)
         etc., 
 
         Andrew TODOs:
@@ -31,8 +33,8 @@ import math
             - DONE: Add multiple enemies
             - DONE: Add tower level up mechanism -- DONE
             - DONE: Update UI to have tower levels and damage
-            - TODO: Update state to handle multiple towers and enemies
-            - TODO: Add money/budget logic
+            - DONE: Update state to handle multiple towers and enemies
+            - DONE: Add money/budget logic
             - TODO: Allow for placing multiple towers and moving existing towers
 '''
 
@@ -52,6 +54,8 @@ class Reward:
     WAVE_CLEARED: int = 20
     ALL_WAVES_CLEARED: int = 200
     BASE_DESTROYED: int = -10
+
+    INVALID_ACTION: int = -1
 
 class GridCell(IntEnum):
     """The different grid cell types"""
@@ -248,7 +252,6 @@ class TowerDefenseEnv(gym.Env):
                 A build phase reward
         """
         # Action can now be [0, 2*size*size]
-        original_action = action
         reward = 0
 
         if action == 0:
@@ -257,26 +260,36 @@ class TowerDefenseEnv(gym.Env):
 
         # Map action number to grid position 
         action -= 1  # get rid of 0 because 0 is "do nothing"
+        mapped_action = action
 
         if action >= self.size * self.size:
-            action = math.floor(action / 2)
+            mapped_action = math.floor(action / 2) # reduce to fit the grid
 
-        y, x = self._action_to_coordinate(self.size, action)
-
-        # TODO: add option to place multiple towers based on current budget
-        # Need to encode an action to include number of towers and type of tower
-        # ()
+        y, x = self._action_to_coordinate(self.size, mapped_action)
 
         # Place (create) tower if valid - must not be on path or already have a tower
         if (y, x) != self.base.pos and (y, x) not in self.path and self.grid[y, x, GridCell.TOWER] != GridCell.TOWER: 
 
-            if original_action >= self.size * self.size:
-                tower = SingleTargetTower(pos=(y,x), health=TowerInfo.SINGLE_TARGET_HEALTH)
-            else:
+            if action < self.size * self.size: # Single tower
+
+                tower = SingleTargetTower(pos=(y,x), health=TowerInfo.SINGLE_TARGET_HEALTH) 
+
+            else: # AoE tower
                 tower = AoETower(pos=(y,x), health=TowerInfo.AOE_HEALTH)
 
+
+            if self.budget < tower.cost:
+                # Incur penalty for trying to buy item not allowed
+                reward += Reward.INVALID_ACTION
+                return reward
+
+            # Update info
+            self.budget -= tower.cost
             self.towers[tower.pos] = tower 
             self.grid[y, x, GridCell.TOWER] = GridCell.TOWER
+        
+        else: # Incur penalty for taking action on invalid square
+            reward += Reward.INVALID_ACTION
             
         return reward
 
@@ -284,7 +297,6 @@ class TowerDefenseEnv(gym.Env):
     def _spawn_enemies(self):
         """
             Spawn enemies at the start of their given path.
-            TODO: To update to handle multiple (different) paths
         """
         for _ in range(self.num_enemies):
             # Generate path and create enemy
@@ -347,6 +359,9 @@ class TowerDefenseEnv(gym.Env):
         self.enemies = [e for e in self.enemies if not e.is_dead()]
         e_defeated = e_count - len(self.enemies)
 
+        # Update budget
+        self.budget += e_defeated * EnemyInfo.KILL_PAYOUT
+
         self._reset_grid()
         self._update_grid() 
         
@@ -361,8 +376,8 @@ class TowerDefenseEnv(gym.Env):
         return reward, wave_terminated, e_defeated 
 
 
-    def _get_obs(self, as_tuple=True):
-        """Returns the current observation (state)"""
+    def _get_obs(self):
+        """Returns the current observation (state) as a tuple"""
         obs = np.zeros((self.size, self.size, 8), dtype=int)
         
         # Tower info
@@ -374,7 +389,6 @@ class TowerDefenseEnv(gym.Env):
         for enemy in self.enemies:
             y, x = enemy.pos
             obs[y, x, 2] += 1 # num_enemies 
-            # obs[y, x, 3].append(enemy.get_id()) # types of enemies TODO: If adding different enemies, update state
             obs[y, x, 3] = (obs[y, x, 3] + enemy.health) / obs[y, x, 2] # avg enemy health
             obs[y, x, 4] = max(obs[y, x, 4], enemy.health) # max hp of enemies
 
@@ -388,10 +402,11 @@ class TowerDefenseEnv(gym.Env):
             obs[y, x, 6] = 1  # base or not
             obs[y, x, 7] = self.base.health  # base health 
 
-        if as_tuple:
-            return self.state_to_key(obs)
 
-        return obs
+        # Convert observation to key and add budget
+        obs = obs.flatten().tolist()
+        obs.append(self.budget)
+        return tuple(obs)
 
 
     def render(self):
@@ -405,11 +420,6 @@ class TowerDefenseEnv(gym.Env):
             pygame.display.quit()
             pygame.quit()
         self.window = None
-
-            
-    def state_to_key(self, obs):
-        """ Converts observation to key """
-        return tuple(obs.flatten().tolist())    
 
 
     def s_path(self, n: int, gap: int = 2):
@@ -649,6 +659,8 @@ class TowerDefenseEnv(gym.Env):
         wave = self.font.render(f"Wave: {self.wave_count + 1}", True, (27, 32, 33))
         reward = self.font.render(f"TReward: {self.total_reward:.2f}", True, (27, 32, 33))
         avg_reward = self.font.render(f"Avg Reward: {self.total_reward if self.current_episode == 0 else (self.total_reward / self.current_episode):.2f}", True, (27, 32, 33))
+        start_budget = self.font.render(f"Start Budget: {self.start_budget}", True, (27, 32, 33))
+        budget = self.font.render(f"Budget: {self.budget}", True, (27, 32, 33))
 
         # Draw Stats
         self.window.blit(title, (sidebar_x + 15, 20))
@@ -656,6 +668,8 @@ class TowerDefenseEnv(gym.Env):
         self.window.blit(wave, (sidebar_x + 15, 90))
         self.window.blit(reward, (sidebar_x + 15, 120))
         self.window.blit(avg_reward, (sidebar_x + 15, 150))
+        self.window.blit(start_budget, (sidebar_x + 15, 180))
+        self.window.blit(budget, (sidebar_x + 15, 210))
 
         pygame.display.flip()
         self.clock.tick(self.metadata["render_fps"])
