@@ -137,5 +137,3 @@ class AoETower(Tower):
     
     def get_color(self):
         return (255, 140, 0)
-
-
