@@ -25,7 +25,6 @@ import math
         - DONE: Update UI to have HP
         - TODO: Add Additional RL algos (from libraries)
         - TODO: Analysis on different RL algos (a cross comparison or internal analysis of algorithm (e..g, different parameters))
-        - TODO: Evolving wave levels (in difficulty e.g., # enemies)
         etc., 
 
         Andrew TODOs:
@@ -35,11 +34,14 @@ import math
             - DONE: Update UI to have tower levels and damage
             - DONE: Update state to handle multiple towers and enemies
             - DONE: Add money/budget logic
-            - TODO: Allow for placing multiple towers and moving existing towers
+            - DONE: Allow for placing multiple towers and moving existing towers
+                - NOTE: Moving existing towers is now out of scope
+            - DONE: Evolving wave levels (in difficulty e.g., # enemies)
 '''
 
 ENV_NAME = "RL Tower Defense | COMP4010 - Group 12"
 MAX_INT = 2**63 - 2 # max possible int for spaces.Box
+ENEMY_SPAWN_RATE = 10
 
 @dataclass(frozen=True)
 class Reward:
@@ -80,7 +82,7 @@ class TowerDefenseEnv(gym.Env):
 
     def __init__(
             self,  
-            size=5, 
+            size=10, 
             num_enemies=1,
             max_waves=10, 
             render_mode=None,
@@ -196,18 +198,27 @@ class TowerDefenseEnv(gym.Env):
         truncated = False
         e_defeated = 0
 
+        max_enemies = self.num_enemies + 2 * self.wave_count
+        num_spawned_enemies = 0
+        
         # Beginning of wave
         if self.phase == Phase.BUILD:
             cumulative_reward += self._build_phase_step(action)
-            self._spawn_enemies()
+            # self._spawn_enemies()
             self.phase = Phase.DEFEND 
 
         # During a wave (one wave represents a single step)
         if self.phase == Phase.DEFEND:
 
             wave_terminated = False
+            step_count = 0
 
             while (not wave_terminated) and self.wave_count < self.max_waves:
+
+                # Spawn enemies every 10 steps
+                if (num_spawned_enemies < max_enemies) and (step_count % 10 == 0):
+                    self._spawn_enemy()
+                    num_spawned_enemies += 1
 
                 reward, wave_terminated, e_defeated = self._defense_phase_step()
                 cumulative_reward += reward
@@ -220,6 +231,8 @@ class TowerDefenseEnv(gym.Env):
                 if wave_terminated:
                     self.wave_count += 1
                     self.phase = Phase.BUILD 
+
+                step_count += 1
 
         # Terminated conditions (terminates an episode)
         terminated = False
@@ -298,18 +311,26 @@ class TowerDefenseEnv(gym.Env):
         """
             Spawn enemies at the start of their given path.
         """
-        for _ in range(self.num_enemies):
-            # Generate path and create enemy
-            # path = self.s_path(self.size)
 
-            ## This creates random paths for an enemy 
-            # path = self._generate_enemy_path(self.size, self.base.pos)
+        '''
+            Each wave spawns 5 + 2 (times the wave number enemies)
+            Each enemy has 10 + (5 times the wave number) health
+            Enemies appear gradually, one every 10 time steps
+            All enemies start at position 0 on the path
+        '''
+        for _ in range(self.num_enemies + 2 * self.wave_count):
+            self._spawn_enemy()
+            
 
-            path = self.path # set default path
-            enemy = Enemy(pos=path[0], path=path)
-            self.enemies.append(enemy)
-            y, x = enemy.pos
-            self.grid[y, x, GridCell.ENEMY] = GridCell.ENEMY
+    def _spawn_enemy(self):
+        """
+            Spawn enemy as the start of their given path
+        """
+        path = self.path # set default path
+        enemy = Enemy(pos=path[0], path=path, health=EnemyInfo.HEALTH + (5 * self.wave_count))
+        self.enemies.append(enemy)
+        y, x = enemy.pos
+        self.grid[y, x, GridCell.ENEMY] = GridCell.ENEMY
 
 
     def _defense_phase_step(self):
@@ -524,7 +545,7 @@ class TowerDefenseEnv(gym.Env):
             return
         
         cell_size = 80
-        sidebar_width = 200
+        sidebar_width = 300
         window_size = self.size * cell_size
 
         if self.window is None: # initialize
@@ -643,7 +664,6 @@ class TowerDefenseEnv(gym.Env):
         self.window.blit(canvas, (0, 0))
 
         # Draw sidebar on the window
-        sidebar_width = 200
         sidebar_x = self.size * cell_size
         sidebar_y = self.size * cell_size
 
@@ -661,6 +681,7 @@ class TowerDefenseEnv(gym.Env):
         avg_reward = self.font.render(f"Avg Reward: {self.total_reward if self.current_episode == 0 else (self.total_reward / self.current_episode):.2f}", True, (27, 32, 33))
         start_budget = self.font.render(f"Start Budget: {self.start_budget}", True, (27, 32, 33))
         budget = self.font.render(f"Budget: {self.budget}", True, (27, 32, 33))
+        remaining_enemies = self.font.render(f"Enemies Remaining: {len(self.enemies)}", True, (27, 32, 33))
 
         # Draw Stats
         self.window.blit(title, (sidebar_x + 15, 20))
@@ -670,6 +691,7 @@ class TowerDefenseEnv(gym.Env):
         self.window.blit(avg_reward, (sidebar_x + 15, 150))
         self.window.blit(start_budget, (sidebar_x + 15, 180))
         self.window.blit(budget, (sidebar_x + 15, 210))
+        self.window.blit(remaining_enemies, (sidebar_x + 15, 240))
 
         pygame.display.flip()
         self.clock.tick(self.metadata["render_fps"])

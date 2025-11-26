@@ -10,7 +10,7 @@ if __name__ == "__main__":
     
     # Approximate Q values
     Q = q_learning(env, 
-                   episodes=10000, 
+                   episodes=5000, 
                    alpha=0.5, 
                    gamma=0.9, 
                    epsilon_start=0.9, 
@@ -19,7 +19,7 @@ if __name__ == "__main__":
                    log=True)
     env.close()
 
-    env = TowerDefenseEnv(render_mode="human", render_rate=200, num_enemies=3) 
+    env = TowerDefenseEnv(render_mode="human", render_rate=200, num_enemies=5) 
     # evaluate_policy(env, Q, episodes=5, sleep=0.5)
     evaluate_policy(env, Q)
     env.close()
