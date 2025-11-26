@@ -577,7 +577,9 @@ class TowerDefenseEnv(gym.Env):
         for y in range(self.size):
             for x in range(self.size):
 
-                if self.grid[y, x, GridCell.BASE] == GridCell.BASE: # draw base
+                # Check if base should be drawn here (one square up from actual position)
+                by, bx = self.base.pos
+                if y == by - 1 and x == bx: # draw base visual one square up
                     # Color base based on health (green -> yellow -> red)
                     health_ratio = self.base.health_ratio()
                     if health_ratio > 0.66:
@@ -601,6 +603,22 @@ class TowerDefenseEnv(gym.Env):
                     color = color_map[GridCell.ENEMY] 
                     pygame.draw.line(canvas, color, (cell_x, cell_y), (cell_x + cell_size, cell_y + cell_size), 4) # Draw an X shape (two diagonal lines)
                     pygame.draw.line(canvas, color, (cell_x + cell_size, cell_y), (cell_x, cell_y + cell_size), 4)
+                    
+                    # Draw enemy health
+                    for enemy in self.enemies:
+                        if enemy.pos == (y, x):
+                            health_text = str(enemy.health)
+                            font_enemy = pygame.font.SysFont("consolas", 14, bold=True)
+                            health_surface = font_enemy.render(health_text, True, (255, 255, 255))
+                            health_rect = health_surface.get_rect(center=(cell_x + cell_size//2, cell_y + cell_size//2))
+                            
+                            # Black background for readability
+                            bg_rect = health_rect.inflate(6, 4)
+                            pygame.draw.rect(canvas, (0, 0, 0), bg_rect)
+                            pygame.draw.rect(canvas, color, bg_rect, 1)  # Red border
+                            
+                            canvas.blit(health_surface, health_rect)
+                            break
                     # pygame.draw.rect(canvas, color_map[GridCell.ENEMY], pygame.Rect(x*cell_size, y*cell_size, cell_size, cell_size))
                 
                 # Different tower types
@@ -643,21 +661,21 @@ class TowerDefenseEnv(gym.Env):
         # Draw base border (thick border to highlight it)
         by, bx = self.base.pos
         pygame.draw.rect(canvas, (255, 255, 255), 
-                        pygame.Rect(bx*cell_size, by*cell_size, cell_size, cell_size), 
+                        pygame.Rect(bx*cell_size, (by-1)*cell_size, cell_size, cell_size), 
                         width=4)  # Thick white border
 
         # Draw base health text
         # Draw "BASE" label
         font_label = pygame.font.Font(None, 28)
         label_surface = font_label.render("BASE", True, (255, 255, 255))
-        label_rect = label_surface.get_rect(center=(bx*cell_size + cell_size//2, by*cell_size + cell_size//2 - 15))
+        label_rect = label_surface.get_rect(center=(bx*cell_size + cell_size//2, (by-1)*cell_size + cell_size//2 - 15))
         canvas.blit(label_surface, label_rect)
         
         # Draw health ratio
         font_health = pygame.font.Font(None, 32)
         health_text = f"{self.base.health}/{self.base.original_health}"
         text_surface = font_health.render(health_text, True, (255, 255, 255))
-        text_rect = text_surface.get_rect(center=(bx*cell_size + cell_size//2, by*cell_size + cell_size//2 + 12))
+        text_rect = text_surface.get_rect(center=(bx*cell_size + cell_size//2, (by-1)*cell_size + cell_size//2 + 12))
         canvas.blit(text_surface, text_rect)
 
         # Draw grid on window
