@@ -83,7 +83,7 @@ class TowerDefenseEnv(gym.Env):
     def __init__(
             self,  
             size=10, 
-            num_enemies=1,
+            num_enemies=10,
             max_waves=10, 
             render_mode=None,
             render_rate=100
@@ -141,20 +141,17 @@ class TowerDefenseEnv(gym.Env):
             # j = the column (x)
             # k = information for cell (see _get_obs for more details)
         '''
-        self.observation_space = spaces.Dict({
-            "grid": spaces.Box( # Grid info
-                low=0,
-                high=max(TowerInfo.MAX_LEVEL, EnemyInfo.MAX_HEALTH, BaseInfo.MAX_HEALTH),
-                shape=(self.size, self.size, 8),
-                dtype=int
+        self.observation_space = spaces.Box(
+            low=0.0,
+            high=max(
+                TowerInfo.MAX_LEVEL,
+                EnemyInfo.MAX_HEALTH,
+                BaseInfo.MAX_HEALTH,
+                BudgetInfo.MAX_BUDGET,
             ),
-            "budget": spaces.Box( # Current Budget
-                low=0,
-                high=BudgetInfo.MAX_BUDGET,
-                shape=(1,),
-                dtype=int
-            )
-        })
+            shape=((self.size * self.size * 8) + 1,),
+            dtype=np.float32,
+        )
 
 
     def reset(self, seed=None, options=None):
@@ -398,8 +395,8 @@ class TowerDefenseEnv(gym.Env):
 
 
     def _get_obs(self):
-        """Returns the current observation (state) as a tuple"""
-        obs = np.zeros((self.size, self.size, 8), dtype=int)
+        """Returns the current observation (state) as a numpy array"""
+        obs = np.zeros((self.size, self.size, 8), dtype=float)
         
         # Tower info
         for (y, x), tower in self.towers.items():
@@ -424,10 +421,10 @@ class TowerDefenseEnv(gym.Env):
             obs[y, x, 7] = self.base.health  # base health 
 
 
-        # Convert observation to key and add budget
-        obs = obs.flatten().tolist()
-        obs.append(self.budget)
-        return tuple(obs)
+        # Convert observation to array and add budget
+        obs = obs.flatten()
+        obs = np.append(obs, float(self.budget))
+        return obs
 
 
     def render(self):
