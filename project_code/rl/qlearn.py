@@ -50,12 +50,14 @@ def q_learning(env,
 
     for ep in range(1, episodes + 1):
         state, info = env.reset()
+        state = tuple(state)
         terminated = False
         total_reward = 0
         
         while not terminated:
             action = e_greedy(epsilon, state)
             state_prime, reward, terminated, truncated, info = env.step(action)
+            state_prime = tuple(state_prime)
 
             # Q-learning update
             best_next = np.max(Q[state_prime])
@@ -79,12 +81,13 @@ def q_learning(env,
 
     return Q
 
-def evaluate_policy(env, Q, episodes=2, sleep=0.1):
+def evaluate_policy(env, Q, episodes=1, sleep=0.1):
 
     print("EVALUATION OF Q-LEARNED POLICY **** \n")
 
     for ep in range(episodes):
         state, info = env.reset()
+        state = tuple(state)
         done = False
         total_reward = 0
 
@@ -92,6 +95,7 @@ def evaluate_policy(env, Q, episodes=2, sleep=0.1):
 
             action = int(np.argmax(Q[state])) # greedy action derived from Q
             state, reward, terminated, _, info = env.step(action)
+            state = tuple(state)
             done = terminated
             total_reward += reward
 
