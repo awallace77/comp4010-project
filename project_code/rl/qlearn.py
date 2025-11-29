@@ -16,6 +16,53 @@ from envs.tower_defense_env import TowerDefenseEnv
     Below is the implementation of the q-learning algorithm for our Tower Defense Environment.
 """
 
+def QLearningFA(env, gamma, step_size, epsilon, max_episode):
+    """
+        Computes the approximate optimal policy (using FA) Pi and q values of the policy.
+        Args:
+            env: The environment
+            gamma: The discount factor in [0, 1]
+            step_size: The step size for updating the action-values in (0, 1]
+            epsilon: The behavior policy in (0, 1)
+            max_episode: the maximum number of episodes before the algorithm terminates
+        Returns:
+            A tuple (Pi, q) of the approx. optimal policy and q values following the policy
+    """
+
+    q = np.random.rand(env.n_states, env.n_actions) 
+    q[env.goal] = np.zeros(env.n_actions)
+
+    def e_greedy(s):
+        # Initial Action (following epsilon-greedy)
+        p = np.random.random()
+        # p = env.np_random.random()
+        a = np.random.randint(env.n_actions) if p < epsilon else np.argmax(q[s])
+        return a
+
+    for _ in range(max_episode):
+        s, _ = env.reset() # init start state
+        terminated = False
+
+        while not terminated:
+            a = e_greedy(s)
+            s_prime, reward, terminated, _, _ = env.step(a) # take action a
+            target = reward if terminated else reward + gamma * np.max(q[s_prime])
+
+            q[s, a] += step_size * (target - q[s, a])
+            s = s_prime
+
+    # Derive optimal policy from q (i.e, select action for each state with highest value)
+    q[env.goal] = np.zeros(env.n_actions)
+    greedy_actions = np.argmax(q, axis=1)  # identify actions with highest q value 
+    Pi = np.zeros_like(q, dtype=int)
+    Pi[np.arange(env.n_states), greedy_actions] = 1 # derive the policy from greedy actions
+
+    Pi = A2helpers.diagonalization(Pi, env.n_states, env.n_actions)
+    q = q.reshape(env.n_states * env.n_actions, 1)
+    return Pi, q
+
+
+
 def q_learning(env,
                      episodes=1000,
                      alpha=0.5,

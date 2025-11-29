@@ -1,14 +1,12 @@
 import numpy as np
-import numpy as np
 from matplotlib import pyplot as plt
-from scipy.special import digamma
 from rl.utils import *
 
 '''
     a2c.py
     Implementation of the Advantage Actor-Critic algorithm. 
 '''
-def ActorCritic(
+def a2c(
         env,
         featurizer,
         eval_func,
@@ -18,6 +16,7 @@ def ActorCritic(
         max_episodes=400,
         evaluate_every=20):
     """
+        Advantage Actor-Critic using TD(0)
         Args:
             env: a gym environment
             featurizer: converts a state S of the env into a feature vector
@@ -36,15 +35,17 @@ def ActorCritic(
     d = featurizer.n_features
 
     # Initialize parameters
-    Theta = np.random.rand(d, a_space_size)
-    w = np.random.rand(d)
+    # Theta = np.random.rand(d, a_space_size)
+    # w = np.random.rand(d)
+    Theta = np.random.randn(d, a_space_size) * 0.01
+    w = np.zeros(d)
 
     eval_returns = []
     for i in range(1, max_episodes + 1):
         s, _ = env.reset()
         s = featurizer.featurize(s)
         terminated = truncated = False
-        actor_discount = 1
+        # actor_discount = 1
         while not (terminated or truncated):
             
             # Value of current state 
@@ -69,9 +70,10 @@ def ActorCritic(
 
             # Policy gradient update actor 
             policy_gradient = logSoftmaxPolicyGradient(s, a, Theta)
-            Theta = Theta + actor_step_size * td_error * actor_discount * policy_gradient
+            # Theta = Theta + actor_step_size * td_error * actor_discount * policy_gradient
+            Theta = Theta + actor_step_size * td_error * policy_gradient
 
-            actor_discount *= gamma
+            # actor_discount *= gamma
 
             s = s_prime
 
@@ -83,7 +85,7 @@ def ActorCritic(
     return Theta, w, eval_returns
 
 
-def runACExperiments(env, featurizer, eval_func, img_dest_path="", file_name=""):    
+def run_a2c_experiments(env, featurizer, eval_func, img_dest_path="", file_name=""):    
     """
         Runs experiments for ActorCritic
         Args:
@@ -99,7 +101,7 @@ def runACExperiments(env, featurizer, eval_func, img_dest_path="", file_name="")
     def repeatExperiments(actor_step_size, critic_step_size):
         eval_returns_step_sizes = np.zeros([n_runs, n_eval])
         for r in range(n_runs):
-            Theta, w, eval_returns = ActorCritic(
+            Theta, w, eval_returns = a2c(
                 env,
                 featurizer,
                 eval_func,
@@ -114,8 +116,8 @@ def runACExperiments(env, featurizer, eval_func, img_dest_path="", file_name="")
         avg_eval_returns = np.mean(eval_returns_step_sizes, axis=0) 
         return avg_eval_returns
 
-    # n_runs = 100
-    n_runs = 3
+    n_runs = 100
+    # n_runs = 3
     max_episodes = 400
     evaluate_every = 20
     n_eval = max_episodes // evaluate_every # num of evaluation during training
