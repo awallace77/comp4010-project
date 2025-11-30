@@ -184,7 +184,7 @@ def dqn(
             eval_returns[eval_index] = avg_return
             eval_index += 1
 
-            return q_net, eval_returns
+    return q_net, eval_returns
 
 
 def run_dqn_experiments(env, eval_func, img_dest_path: str = "", file_name: str = ""):
