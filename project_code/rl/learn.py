@@ -9,7 +9,10 @@ from rl.featurizers.tile_coder_featurizer import TileCoder
 from rl.qlearning import qlearning, run_qlearning_experiments, greedy_policy as qlearning_greedy_policy
 from rl.a2c import a2c, softmaxPolicy, run_a2c_experiments 
 from rl.sarsa import sarsa, run_sarsa_experiments, greedy_policy as sarsa_greedy_policy
-"""
+from rl.dqn import dqn, run_dqn_experiments, greedy_policy as dqn_greedy_policy
+import os
+
+'''
     learn.py
     Entry point for rl learning algorithms
     NOTE: 
@@ -140,3 +143,25 @@ def run_sarsa_learning():
         file_name=file_name)
     log(level, f"Testing finished in {time.time() - start_time:.3f} seconds")
     env.close()
+
+
+def run_dqn_learning():
+    num_enemies = 7
+    
+    env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
+    
+    # Use current directory for results
+    img_dest_path = os.path.dirname(os.path.abspath(__file__)) + "/results"
+    file_name = "dqn_learn"
+    
+    start_time = time.time()
+    results = run_dqn_experiments(
+        env=env, 
+        eval_func=evaluate_policy_nn, 
+        img_dest_path=img_dest_path, 
+        file_name=file_name
+    )  
+    env.close()
+    
+    return results
+
