@@ -2,10 +2,14 @@ import numpy as np
 from scipy.spatial.distance import cdist
 import gymnasium as gym
 import jax
+from datetime import datetime 
 '''
     utils.py
     Provides helper functions
 '''
+def log(level, msg):
+    print(f"{datetime.now().replace(microsecond=0)} [{level}]: {msg}")
+
 def evaluate_policy_fa(env, featurizer, W, policy_func, n_runs=10):
     '''
         Evaluate the policy given the parameters W and policy function.

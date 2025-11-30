@@ -1,22 +1,21 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from rl.utils import *
-
-'''
-    a2c.py
-    Implementation of the Advantage Actor-Critic algorithm. 
-'''
+import math
+"""
+    Advantage Actor Critic (A2C) w TD(0)
+"""
 def a2c(
         env,
         featurizer,
         eval_func,
         gamma=0.99,
-        actor_step_size=0.005,
-        critic_step_size=0.005,
-        max_episodes=400,
-        evaluate_every=20):
+        actor_step_size=0.00005,
+        critic_step_size=0.0001,
+        max_episodes=10000,
+        evaluate_every=50):
     """
-        Advantage Actor-Critic using TD(0)
+        Advantage Actor-Critic (A2C) using TD(0)
         Args:
             env: a gym environment
             featurizer: converts a state S of the env into a feature vector
@@ -28,8 +27,7 @@ def a2c(
             evaluate_every: integer indicating how frequent to evaluate
         Returns:
             The learned actor parameters Theta, critic parameters w, and a Python list of runs evaluated during training
-    """
-
+    """ 
     # Extract sizes
     a_space_size = env.action_space.n 
     d = featurizer.n_features
@@ -82,6 +80,9 @@ def a2c(
             eval_returns.append(eval_return)
             # print(f"[ActorCritic evaluation]: {i}th episode")
 
+        if i % math.floor(max_episodes / 5) == 0:
+            print(f"[A2C]: Episode {i}; Theta {Theta}; w {w}")
+
     return Theta, w, eval_returns
 
 
@@ -116,14 +117,14 @@ def run_a2c_experiments(env, featurizer, eval_func, img_dest_path="", file_name=
         avg_eval_returns = np.mean(eval_returns_step_sizes, axis=0) 
         return avg_eval_returns
 
-    n_runs = 100
-    # n_runs = 3
-    max_episodes = 400
-    evaluate_every = 20
+    n_runs = 1
+    max_episodes = 10000
+    evaluate_every = 50
     n_eval = max_episodes // evaluate_every # num of evaluation during training
 
-    actor_step_size = 0.005
-    critic_step_size_list = [0.005, 0.01, 0.05, 0.1]
+    actor_step_size = 0.00005
+    # actor_step_size = 0.0001
+    critic_step_size_list = [0.005, 0.001, 0.0005, 0.0001]
     results = np.zeros([len(critic_step_size_list), n_eval])
 
     np.random.seed(101210291)
@@ -137,12 +138,12 @@ def run_a2c_experiments(env, featurizer, eval_func, img_dest_path="", file_name=
     for i, critic_step_size in enumerate(critic_step_size_list):
         plt.plot(x, results[i], label=f"Critic step size = {critic_step_size}")
 
-    plt.xlabel("Episodes")
+    plt.xlabel(f"Evaluation Number (Every {evaluate_every} Episodes)")
     plt.ylabel("Average Evaluated Return")
-    plt.title("Actor-Critic (with Linear FA) Performance (Actor step size = 0.005)")
+    plt.title(f"A2C with Linear Approximation (Actor Step Size = {actor_step_size})\nAverage Return over {n_runs} runs ({max_episodes} episodes per run)")
     plt.grid(True)
     plt.legend()
-    plt.savefig(f"{img_dest_path}/{file_name}.png")
+    plt.savefig(f"{img_dest_path}/{file_name}_{n_runs}runs_{max_episodes}episodes.png")
     plt.clf()
 
     return results

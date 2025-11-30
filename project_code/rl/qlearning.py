@@ -1,15 +1,15 @@
 import numpy as np
+import math 
 import torch
 import torch.optim as optim
 from rl.nnetworks.qnetwork import QNetwork
 from matplotlib import pyplot as plt
-import math
 from rl.utils import log
 """
-    SARSA w Q-Network Function Approximation 
+    Q-Learning w Q-Network Function Approximation 
 """
 
-def sarsa(
+def qlearning(
         env, 
         eval_func, 
         gamma=0.99, 
@@ -26,27 +26,31 @@ def sarsa(
 
     # Initialize Q-network
     q_net = QNetwork(input_dim=obs_dim, output_dim=num_actions)
+    
+    # Q target so we don't update every step 
+    update_target_every = 50  # adjust as needed
+    q_target = QNetwork(input_dim=obs_dim, output_dim=num_actions)
+    q_target.load_state_dict(q_net.state_dict())  # copy weights
     optimizer = optim.Adam(q_net.parameters(), lr=learning_rate)
     # loss_fn = torch.nn.MSELoss()
     loss_fn = torch.nn.SmoothL1Loss() # Huber loss
 
     eval_returns = []
     epsilon = epsilon_start
+
     for episode in range(1, max_episode + 1):
         
-        # Initial state
         state = env.reset()[0]
-        action = e_greedy(env, state, q_net, epsilon)
         done = False
         
         while not done:
+
+            # Epsilon greedy action
+            action = e_greedy(env, state, q_net, epsilon)
             
             # Take action in environment
             next_state, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
-
-            # Select next action using epsilon-greedy
-            next_action = e_greedy(env, next_state, q_net, epsilon)
 
             # Normalize for nn
             state_tensor = normalize_state(state)
@@ -55,45 +59,49 @@ def sarsa(
             q_values = q_net(state_tensor.unsqueeze(0))
             q_current = q_values[0, action]
 
-            # Compute TD target
+            # TD Target
             with torch.no_grad():
                 if done:
                     td_target_val = float(reward)
                 else:
-                    q_next = q_net(next_state_tensor.unsqueeze(0))
-                    q_next_a = float(q_next[0, next_action].item())
-                    td_target_val = float(reward) + gamma * q_next_a
+                    q_next = q_target(next_state_tensor.unsqueeze(0))
+                    max_q_next_a = torch.max(q_next[0]).item()
+                    td_target_val = float(reward) + gamma * max_q_next_a 
 
-            # Convert to tensor
+            # Convert target to tensor
             td_target = torch.tensor(td_target_val, dtype=q_current.dtype, device=q_current.device)
- 
+
             # Loss
             loss = loss_fn(q_current, td_target)
 
             # Backprop
             optimizer.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(q_net.parameters(), max_norm=1.0) # Prevent exploding gradients
+            # Prevent exploding gradients
+            torch.nn.utils.clip_grad_norm_(q_net.parameters(), max_norm=1.0)
             optimizer.step()
 
             # Move to next step
             state = next_state
-            action = next_action
 
+            if episode % update_target_every == 0:
+                q_target.load_state_dict(q_net.state_dict())
+
+        # Decay epsilon 
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
 
         if episode % evaluate_every == 0:
             eval_return = eval_func(env, lambda state: greedy_policy(state, q_net))
             eval_returns.append(eval_return)
-        
+
         if episode % math.floor(max_episode / 10) == 0:
-            log("SARSA", f"Episode {episode} epsilon = {epsilon:.4f}")
+            log("Q-LEARNING", f"Episode {episode} epsilon = {epsilon:.4f}")
 
     return q_net, eval_returns
 
-def run_sarsa_experiments(env, eval_func, img_dest_path="", file_name=""):    
+def run_qlearning_experiments(env, eval_func, img_dest_path="", file_name=""):    
     """
-        Runs experiments for SARSA
+        Runs experiments for Q-Learning (w Function Approximation [Q Net])
         Args:
             env: A gym environment
             eval_func: an evaluation function that evaluates the performance of the intermediate policy during training
@@ -106,7 +114,7 @@ def run_sarsa_experiments(env, eval_func, img_dest_path="", file_name=""):
     def repeatExperiments(learning_rate):
         eval_returns_step_sizes = np.zeros([n_runs, n_eval])
         for r in range(n_runs):
-            q_net, eval_returns = sarsa(
+            q_net, eval_returns = qlearning(
                 env,
                 eval_func=eval_func,
                 gamma=0.99,
@@ -123,13 +131,13 @@ def run_sarsa_experiments(env, eval_func, img_dest_path="", file_name=""):
     # n_runs = 100
     n_runs = 1
     max_episodes = 5000
-    evaluate_every = 10
+    evaluate_every = 50
     n_eval = max_episodes // evaluate_every # num of evaluation during training 
 
     def save_plt():
         plt.xlabel(f"Evaluation Number (Every {evaluate_every} Episodes)")
         plt.ylabel("Average Evaluated Return")
-        title = f"SARSA with Q-Network Function Approximation"
+        title = f"Q-Learning with Q-Network Function Approximation"
         title = title + f"\nAverage Return over {n_runs} runs ({max_episodes} episodes per run)"
         plt.title(title)
         plt.grid(True)
@@ -139,8 +147,7 @@ def run_sarsa_experiments(env, eval_func, img_dest_path="", file_name=""):
         plt.clf()
 
     # learning_rate_list = [0.05, 0.01, 0.005, 0.001]
-    # learning_rate_list = [0.001, 0.0005, 0.0001, 0.00001]
-    learning_rate_list = [0.0001]
+    learning_rate_list = [0.001, 0.0005, 0.0001, 0.00005]
     results = np.zeros((len(learning_rate_list), n_eval))
     np.random.seed(101210291)
 
@@ -152,8 +159,27 @@ def run_sarsa_experiments(env, eval_func, img_dest_path="", file_name=""):
     for i, learning_rate in enumerate(learning_rate_list):
         plt.plot(x, results[i], label=f"Learning Rate = {learning_rate}")
     save_plt()
-
+    
     return results 
+
+# def e_greedy(env, state, q_net, epsilon):
+#     """
+#         Returns e-greedy action for a given state
+#     """
+#     if torch.rand(1).item() < epsilon:
+#         return env.action_space.sample()
+#     else:
+#         with torch.no_grad():
+#             return greedy_policy(state, q_net)
+
+
+# def greedy_policy(state, q_net):
+#     """
+#         Returns best action for given state
+#     """
+#     q_values = q_net(torch.tensor(state, dtype=torch.float32).unsqueeze(0))
+#     action = torch.argmax(q_values).item()
+#     return action
 
 def normalize_state(state):
     s = torch.tensor(state, dtype=torch.float32)
