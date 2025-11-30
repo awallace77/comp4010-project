@@ -18,7 +18,7 @@ import os
     NOTE: 
         Theoretical max reward of 3500 when number enemies = 5 (excluding tower level up rewards) per episode
         max_reward = 10 * (\sum_{i=1}^{10} (num_enemies + 2 * i - 1)) + 2000
-"""
+'''
 
 # NOTE : Please update image destination path to your dir
 num_waves = 10
