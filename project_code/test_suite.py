@@ -2,7 +2,7 @@
 Test script to visualize the base at different health levels
 """
 from envs.tower_defense_env import TowerDefenseEnv
-from game.entities.tower import SingleTargetTower
+from game.entities.tower import SingleTargetTower, AoETower
 from game.game_info import TowerInfo
 import time
 import math
@@ -110,6 +110,62 @@ def test_enemy_spawning():
 
     env.close()
 
+def test_single_and_aoe_turrets():
+    """
+    Episode 1:
+        - Place a single-target turret
+        - Let the environment run (waves spawn) until the base dies.
+    Episode 2:
+        - Reset the environment
+        - Place an AoE turret
+        - Let the environment run (waves spawn) until the base dies.
+    """
+
+    def get_central_pos(env):
+        n = env.size
+        return n - math.floor(n / 2), n - math.floor(n / 2)
+
+    # Helper to run one episode with a specified tower class
+    def run_episode_with_tower(env, tower_cls, label: str):
+        state, info = env.reset()
+        pos = get_central_pos(env)
+        tower = tower_cls(pos=pos)
+        env.add_tower_to_grid(tower)
+
+        print(f"\n=== {label} EPISODE ===")
+        print(f"Placed {tower_cls.__name__} at {tower.pos}")
+        print(f"Base start health: {info.get('base_start_health', 'unknown')}")
+        print(f"Wave start: {info.get('wave', 'unknown')}\n")
+
+        terminated = False
+        truncated = False
+        total_reward = 0.0
+        step_count = 0
+
+        while not (terminated or truncated):
+            action = 0
+
+            state, reward, terminated, truncated, info = env.step(action)
+            total_reward += reward
+            step_count += 1
+
+
+        base_destroyed = info.get("base_destroyed", False)
+        print(
+            f"\n[{label}] Episode ended after {step_count} steps | "
+            f"total_reward={total_reward:.2f} | "
+            f"wave_reached={info.get('wave', '?')} | "
+            f"base_destroyed={base_destroyed}"
+        )
+
+    env = TowerDefenseEnv(render_mode="human", num_enemies=3)
+
+    run_episode_with_tower(env, SingleTargetTower, "SINGLE-TARGET")
+
+    run_episode_with_tower(env, AoETower, "AOE")
+
+    env.close()
+
 
 if __name__ == "__main__":
     """
@@ -118,3 +174,4 @@ if __name__ == "__main__":
     test_base_visualization()
     test_tower_visualization()
     test_enemy_spawning()
+    test_single_and_aoe_turrets()
