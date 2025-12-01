@@ -1,6 +1,9 @@
 import time
 import numpy as np
 import gymnasium as gym
+import os
+
+from rl.utils import evaluate_policy_fa, evaluate_policy_nn, render_env
 from envs.tower_defense_env import TowerDefenseEnv
 from rl.utils import evaluate_policy_fa, evaluate_policy_nn, render_env, log
 from rl.featurizers.tile_coder_featurizer import TileCoder
@@ -9,6 +12,14 @@ from rl.featurizers.tile_coder_featurizer import TileCoder
 from rl.qlearning import qlearning, run_qlearning_experiments, greedy_policy as qlearning_greedy_policy
 from rl.a2c import a2c, softmaxPolicy, run_a2c_experiments 
 from rl.sarsa import sarsa, run_sarsa_experiments, greedy_policy as sarsa_greedy_policy
+from rl.ppo import ppo, run_ppo_experiments, run_ppo_lr_experiments, greedy_policy
+"""
+    learn.py
+    Entry point for rl learning algorithms
+    NOTE: 
+        Theoretical max reward of 3500 when number enemies = 5 (excluding tower level ups) per episode
+        max_reward = 10 * (sum_{i=1}^{n} (num_enemies + 2 * i - 1)) + 2000
+"""
 from rl.dqn import dqn, run_dqn_experiments, greedy_policy as dqn_greedy_policy
 import os
 
@@ -143,6 +154,37 @@ def run_sarsa_learning():
         file_name=file_name)
     log(level, f"Testing finished in {time.time() - start_time:.3f} seconds")
     env.close()
+
+
+def run_ppo_learning():
+    num_enemies = 5  
+
+    # TRAINING
+    env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies)
+    model, eval_returns = ppo(
+        env=env,
+        eval_func=evaluate_policy_nn,
+        learning_rate=3e-4,
+        clip_range=0.2,
+        max_episodes=30,       
+        evaluate_every=10,
+        verbose=1
+    )
+    env.close()
+
+    # TEST Learned Policy with experiments
+    env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies)
+    img_dest_path = os.path.join(os.path.dirname(__file__), "results")
+    file_name = "ppo_learn"
+    results = run_ppo_lr_experiments(
+        env=env,
+        eval_func=evaluate_policy_nn,
+        img_dest_path=img_dest_path,
+        file_name=file_name
+    )
+    env.close()
+
+    return
 
 
 def run_dqn_learning():
