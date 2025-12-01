@@ -26,6 +26,10 @@ In the algorithm implementation phase (Nov 15 - Nov 30), we implemented multiple
 - Implemented A2C using tile coding for feature representation
 - Softmax policy with linear function approximation
 
+**Proximal Policy Optimization (PPO)** (Manal Hassan)
+- Implemented PPO using Stable-Baselines3 library
+- Created experiments comparing different clip ranges and learning rates
+
 ## Bug Fixes and Testing
 
 **Action Mapping Fix** (Mohammad Rehman)
