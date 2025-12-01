@@ -79,6 +79,37 @@ def test_tower_visualization():
     print("  • 4: Level 4")
     print("  • 5: Level 5")
 
+def test_enemy_spawning():
+    env = TowerDefenseEnv(render_mode="human")
+    state, info = env.reset()
+
+    current_wave = info.get("wave", 1)
+    print("\n===WAVE SPAWNING VISUALIZATION TEST===")
+    print(f"Starting at wave {current_wave}")
+
+    max_steps = 20000
+    steps = 0
+
+    while steps < max_steps:
+        # Take a random action to advance the game so waves spawn.
+        action = env.action_space.sample()
+        state, reward, terminated, truncated, info = env.step(action)
+        steps += 1
+
+        new_wave = info.get("wave", current_wave)
+
+        # Detect when a new wave starts
+        if new_wave != current_wave:
+            current_wave = new_wave
+            print(f"Reached wave {current_wave}")
+
+        #Stop if episode is over
+        if terminated or truncated:
+            print("Episode finished early.")
+            break
+
+    env.close()
+
 
 if __name__ == "__main__":
     """
@@ -86,3 +117,4 @@ if __name__ == "__main__":
     """
     test_base_visualization()
     test_tower_visualization()
+    test_enemy_spawning()
