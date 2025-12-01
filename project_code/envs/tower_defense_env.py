@@ -41,14 +41,15 @@ import math
 
 ENV_NAME = "RL Tower Defense | COMP4010 - Group 12"
 MAX_INT = 2**63 - 2 # max possible int for spaces.Box
-ENEMY_SPAWN_RATE = 10
+ENEMY_SPAWN_RATE = 5
 
 @dataclass(frozen=True)
 class Reward:
     """Rewards for the environment"""
     ENEMY_DEFEATED: int = 10
     ENEMY_REACH_BASE: int = -50
-
+    ENEMY_DAMAGED: int = 1
+    
     TOWER_DEFEATED: int = -5
     TOWER_DAMAGED: int = -1 
     TOWER_LEVEL_UP: int = 5
@@ -58,6 +59,7 @@ class Reward:
     BASE_DESTROYED: int = -10
 
     INVALID_ACTION: int = -1
+    VALID_ACTION: int = 1
 
 class GridCell(IntEnum):
     """The different grid cell types"""
@@ -124,6 +126,7 @@ class TowerDefenseEnv(gym.Env):
         self.num_enemies = num_enemies
         self.enemies: list[Enemy] = []  # List of enemy objects 
         self.path = self.s_path(size) # Path each enemy to follow
+        self.num_spawned_enemies = 0
 
         # Base setup
         self.base =  Base(pos=(self.size-1, self.size-1), health=BaseInfo.HEALTH) 
@@ -133,7 +136,26 @@ class TowerDefenseEnv(gym.Env):
         # Action space setup
         # 0 = do nothing, others = place tower at specific cell
         # TODO: Update to enable moving towers/placing multiple towers in accordance to budget at beginning of wave
-        self.action_space = spaces.Discrete(2*(size * size) + 1) 
+        invalid_cells = set(self.path)
+        invalid_cells.add(self.base.pos)
+        self.valid_actions = []
+        self.build_steps_remaining = 3
+
+        # Action 0 = do nothing
+        self.valid_actions.append(("none",))
+
+        for y in range(self.size):
+            for x in range(self.size):
+                cell = (y, x)
+                
+                if cell in invalid_cells:
+                    continue
+        
+                # Two tower types (e.g., type 0 and type 1)
+                self.valid_actions.append(("place", 0, cell))
+                self.valid_actions.append(("place", 1, cell))
+
+        self.action_space = spaces.Discrete(len(self.valid_actions))
 
         # Observation (state space) setup 
         '''A 3d array (n x n x 8) where [i, j, k]: 
@@ -196,40 +218,39 @@ class TowerDefenseEnv(gym.Env):
         e_defeated = 0
 
         max_enemies = self.num_enemies + 2 * self.wave_count
-        num_spawned_enemies = 0
         
         # Beginning of wave
         if self.phase == Phase.BUILD:
             cumulative_reward += self._build_phase_step(action)
-            # self._spawn_enemies()
             self.phase = Phase.DEFEND 
-
+        
         # During a wave (one wave represents a single step)
         if self.phase == Phase.DEFEND:
 
             wave_terminated = False
             step_count = 0
 
-            while (not wave_terminated) and self.wave_count < self.max_waves:
+            # while (not wave_terminated) and self.wave_count < self.max_waves:
 
-                # Spawn enemies every 10 steps
-                if (num_spawned_enemies < max_enemies) and (step_count % 10 == 0):
-                    self._spawn_enemy()
-                    num_spawned_enemies += 1
+            # Spawn enemies every ENEMY_SPAWN_RATE steps
+            if (self.num_spawned_enemies < max_enemies) and (step_count % ENEMY_SPAWN_RATE == 0):
+                self._spawn_enemy()
+                self.num_spawned_enemies += 1
 
-                reward, wave_terminated, e_defeated = self._defense_phase_step()
-                cumulative_reward += reward
+            reward, wave_terminated, e_defeated = self._defense_phase_step() # just ignore agent action
+            cumulative_reward += reward
 
-                if self.render_mode == "human": # Render wave
-                    self.render()
-                    pygame.time.wait(self.render_rate)
+            if self.render_mode == "human": # Render wave
+                self.render()
+                pygame.time.wait(self.render_rate)
 
-                # Wave terminated
-                if wave_terminated:
-                    self.wave_count += 1
-                    self.phase = Phase.BUILD 
+            # Wave terminated
+            if wave_terminated:
+                self.wave_count += 1
+                self.num_spawned_enemies = 0
+                self.phase = Phase.BUILD
 
-                step_count += 1
+            step_count += 1
 
         # Terminated conditions (terminates an episode)
         terminated = False
@@ -264,42 +285,36 @@ class TowerDefenseEnv(gym.Env):
         # Action can now be [0, 2*size*size]
         reward = 0
 
-        if action == 0:
+        action = self.valid_actions[action]
+
+        if action[0] == "none":
             # TODO: Small neg reward for doing nothing?
             return reward
 
-        # Map action number to grid position 
-        action -= 1  # get rid of 0 because 0 is "do nothing"
-        mapped_action = action
+        elif action[0] == "place":
+            _, tower_type, (y, x) = action
 
-        if action >= self.size * self.size:
-            mapped_action = action - (self.size * self.size) # offset to get grid position for AoE towers
-
-        y, x = self._action_to_coordinate(self.size, mapped_action)
-
-        # Place (create) tower if valid - must not be on path or already have a tower
-        if (y, x) != self.base.pos and (y, x) not in self.path and self.grid[y, x, GridCell.TOWER] != GridCell.TOWER: 
-
-            if action < self.size * self.size: # Single tower
-
-                tower = SingleTargetTower(pos=(y,x), health=TowerInfo.SINGLE_TARGET_HEALTH) 
-
-            else: # AoE tower
-                tower = AoETower(pos=(y,x), health=TowerInfo.AOE_HEALTH)
-
-
-            if self.budget < tower.cost:
-                # Incur penalty for trying to buy item not allowed
+            if self.grid[y, x, GridCell.TOWER] == GridCell.TOWER:
                 reward += Reward.INVALID_ACTION
                 return reward
+            
+            else:
+                if tower_type == 0: # single tower 
+                    tower = SingleTargetTower(pos=(y,x), health=TowerInfo.SINGLE_TARGET_HEALTH) 
+                elif tower_type == 1: #aoe tower
+                    tower = AoETower(pos=(y,x), health=TowerInfo.AOE_HEALTH)
+                
+                if self.budget < tower.cost:
+                    # Incur penalty for trying to buy item not allowed
+                    reward += Reward.INVALID_ACTION
+                    return reward
 
-            # Update info
-            self.budget -= tower.cost
-            self.towers[tower.pos] = tower 
-            self.grid[y, x, GridCell.TOWER] = GridCell.TOWER
-        
-        else: # Incur penalty for taking action on invalid square
-            reward += Reward.INVALID_ACTION
+
+        # Place (create) tower
+        self.budget -= tower.cost
+        self.towers[tower.pos] = tower 
+        self.grid[y, x, GridCell.TOWER] = GridCell.TOWER
+        reward += Reward.VALID_ACTION
             
         return reward
 
@@ -328,7 +343,6 @@ class TowerDefenseEnv(gym.Env):
         self.enemies.append(enemy)
         y, x = enemy.pos
         self.grid[y, x, GridCell.ENEMY] = GridCell.ENEMY
-
 
     def _defense_phase_step(self):
         """
@@ -365,6 +379,7 @@ class TowerDefenseEnv(gym.Env):
         for tower in self.towers.values():
             attacked_enemies = tower.attack(self.enemies)
             e_damaged += len(attacked_enemies)
+            reward += Reward.ENEMY_DAMAGED * e_damaged
 
             for e in attacked_enemies: # level up towers
                 if e.is_dead():

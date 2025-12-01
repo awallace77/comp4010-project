@@ -126,12 +126,13 @@ class AoETower(Tower):
             # if(abs(ey - y) + abs(ex - x) <= self.range): # manhattan distance is within range
          
             # Deal damage to multiple enemies in a radius around the tower 
-        if abs(ey - y) <= self.range and abs(ex - x) <= self.range:
-            e.take_damage(self.damage)
-            affected.append(e)
+            if abs(ey - y) <= self.range and abs(ex - x) <= self.range:
+                e.take_damage(self.damage)
+                affected.append(e)
             
         for enemy in affected:
             enemy.take_damage(self.damage)
+
         return affected
     
     def get_color(self):
