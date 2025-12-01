@@ -1,17 +1,45 @@
 import numpy as np
 import math 
 import torch
+import torch.nn as nn
 import torch.optim as optim
 from rl.nnetworks.qnetwork import QNetwork
 from matplotlib import pyplot as plt
 from rl.utils import log
+from envs.tower_defense_env import Phase
 """
     Q-Learning w Q-Network Function Approximation 
 """
+class Featurizer(nn.Module):
+    def __init__(self, input_dim, feature_dim=32):
+        super().__init__()
+        self.feature_dim = feature_dim
+        self.n_features = feature_dim
+
+        self.net = nn.Sequential(
+            nn.LayerNorm(input_dim),
+            nn.Linear(input_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, feature_dim)
+        )
+
+    def forward(self, x):
+        if isinstance(x, np.ndarray):
+            x = torch.tensor(x, dtype=torch.float32)
+        return self.net(x)
+
+    def featurize(self, state):
+        if not isinstance(state, torch.Tensor):
+            state = torch.tensor(state, dtype=torch.float32)
+        return self.forward(state)
+
 
 def qlearning(
         env, 
         eval_func, 
+        featurizer, 
         gamma=0.99, 
         learning_rate=0.0005, 
         epsilon_start=1.0, 
@@ -21,15 +49,14 @@ def qlearning(
         evaluate_every=50):
 
     # Get environment dimensions
-    obs_dim = env._get_obs().shape[0]
     num_actions = env.action_space.n
 
     # Initialize Q-network
-    q_net = QNetwork(input_dim=obs_dim, output_dim=num_actions)
+    q_net = QNetwork(input_dim=featurizer.n_features, output_dim=num_actions)
     
     # Q target so we don't update every step 
     update_target_every = 50  # adjust as needed
-    q_target = QNetwork(input_dim=obs_dim, output_dim=num_actions)
+    q_target = QNetwork(input_dim=featurizer.n_features, output_dim=num_actions)
     q_target.load_state_dict(q_net.state_dict())  # copy weights
     optimizer = optim.Adam(q_net.parameters(), lr=learning_rate)
     # loss_fn = torch.nn.MSELoss()
@@ -42,12 +69,13 @@ def qlearning(
         
         state = env.reset()[0]
         done = False
+
+        rewards = []
         
         while not done:
-
-            # Epsilon greedy action
-            action = e_greedy(env, state, q_net, epsilon)
             
+            action = e_greedy(env, state, q_net, featurizer, epsilon)
+
             # Take action in environment
             next_state, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
@@ -55,6 +83,14 @@ def qlearning(
             # Normalize for nn
             state_tensor = normalize_state(state)
             next_state_tensor = normalize_state(next_state)
+            
+            state_tensor = featurizer.featurize(state_tensor)
+            if isinstance(state_tensor, torch.Tensor):
+                state_tensor = state_tensor.detach().clone().float()
+
+            next_state_tensor = featurizer.featurize(next_state_tensor)
+            if isinstance(next_state_tensor, torch.Tensor):
+                next_state_tensor = next_state_tensor.detach().clone().float()
 
             q_values = q_net(state_tensor.unsqueeze(0))
             q_current = q_values[0, action]
@@ -86,20 +122,28 @@ def qlearning(
 
             if episode % update_target_every == 0:
                 q_target.load_state_dict(q_net.state_dict())
+                # log('INFO', f"Reward {reward}")
+
+            rewards.append(reward)
+
+        
 
         # Decay epsilon 
         epsilon = max(epsilon_min, epsilon * epsilon_decay)
 
         if episode % evaluate_every == 0:
-            eval_return = eval_func(env, lambda state: greedy_policy(state, q_net))
+            eval_return = eval_func(env, lambda state: greedy_policy(state, q_net, featurizer))
             eval_returns.append(eval_return)
-
-        if episode % math.floor(max_episode / 10) == 0:
+        
+        log_rate = math.floor(max_episode / 10)
+        if episode % log_rate if log_rate > 0 else 1 == 0:
             log("Q-LEARNING", f"Episode {episode} epsilon = {epsilon:.4f}")
+            # log("INFO", f"E{episode} reward: {total_reward}")
+            log("INFO", f"Reward mean/std: {np.mean(rewards), np.std(rewards)}")
 
     return q_net, eval_returns
 
-def run_qlearning_experiments(env, eval_func, img_dest_path="", file_name=""):    
+def run_qlearning_experiments(env, eval_func, featurizer, img_dest_path="", file_name=""):    
     """
         Runs experiments for Q-Learning (w Function Approximation [Q Net])
         Args:
@@ -111,12 +155,13 @@ def run_qlearning_experiments(env, eval_func, img_dest_path="", file_name=""):
             results: the results of the experiments
     """
 
-    def repeatExperiments(learning_rate):
+    def repeatExperiments(learning_rate, featurizer):
         eval_returns_step_sizes = np.zeros([n_runs, n_eval])
         for r in range(n_runs):
             q_net, eval_returns = qlearning(
                 env,
                 eval_func=eval_func,
+                featurizer=featurizer,
                 gamma=0.99,
                 learning_rate=learning_rate,
                 max_episode=max_episodes,
@@ -130,8 +175,8 @@ def run_qlearning_experiments(env, eval_func, img_dest_path="", file_name=""):
 
     # n_runs = 100
     n_runs = 1
-    max_episodes = 5000
-    evaluate_every = 50
+    max_episodes = 200
+    evaluate_every = 10
     n_eval = max_episodes // evaluate_every # num of evaluation during training 
 
     def save_plt():
@@ -149,10 +194,10 @@ def run_qlearning_experiments(env, eval_func, img_dest_path="", file_name=""):
     # learning_rate_list = [0.05, 0.01, 0.005, 0.001]
     learning_rate_list = [0.001, 0.0005, 0.0001, 0.00005]
     results = np.zeros((len(learning_rate_list), n_eval))
-    np.random.seed(101210291)
+    # np.random.seed(101210291)
 
     for i, learning_rate in enumerate(learning_rate_list):
-        results[i] = repeatExperiments(learning_rate=learning_rate)
+        results[i] = repeatExperiments(learning_rate=learning_rate, featurizer=featurizer)
 
     plt.figure()
     x = np.arange(1, n_eval + 1) 
@@ -162,25 +207,6 @@ def run_qlearning_experiments(env, eval_func, img_dest_path="", file_name=""):
     
     return results 
 
-# def e_greedy(env, state, q_net, epsilon):
-#     """
-#         Returns e-greedy action for a given state
-#     """
-#     if torch.rand(1).item() < epsilon:
-#         return env.action_space.sample()
-#     else:
-#         with torch.no_grad():
-#             return greedy_policy(state, q_net)
-
-
-# def greedy_policy(state, q_net):
-#     """
-#         Returns best action for given state
-#     """
-#     q_values = q_net(torch.tensor(state, dtype=torch.float32).unsqueeze(0))
-#     action = torch.argmax(q_values).item()
-#     return action
-
 # build max values vector once at module load
 _max_vals = None
 
@@ -189,7 +215,7 @@ def _get_max_vals(size):
     global _max_vals
     if _max_vals is None or len(_max_vals) != size:
         _max_vals = torch.ones(size)
-        for i in range(100):  # 10x10 grid
+        for i in range(36):  # 10x10 grid
             base = i * 8
             _max_vals[base + 0] = 2.0     # tower id
             _max_vals[base + 1] = 5.0     # tower level
@@ -204,21 +230,29 @@ def _get_max_vals(size):
 
 def normalize_state(state):
     """min-max normalization per feature"""
-    s = torch.tensor(state, dtype=torch.float32)
+    s = state
+    if not isinstance(state, torch.Tensor):
+        s = torch.tensor(state, dtype=torch.float32)
+
     max_vals = _get_max_vals(len(s))
     return torch.clamp(s / max_vals, 0.0, 1.0)
 
-def greedy_policy(state, q_net):
+def greedy_policy(state, q_net, featurizer):
     if not isinstance(state, torch.Tensor):
         s = normalize_state(state)
     else:
         s = state / (state.norm() + 1e-8)
+
+    s = featurizer.featurize(s)
+
     with torch.no_grad():
         q_vals = q_net(s.unsqueeze(0))
-        return int(torch.argmax(q_vals, dim=1).item())
+        action = int(torch.argmax(q_vals, dim=1).item()) 
+        return action
 
-def e_greedy(env, state, q_net, epsilon):
+def e_greedy(env, state, q_net, featurizer, epsilon):
     if np.random.rand() < epsilon:
-        return env.action_space.sample()
+        action = env.action_space.sample()
+        return action
     else:
-        return greedy_policy(state, q_net)
+        return greedy_policy(state, q_net, featurizer)

@@ -43,7 +43,7 @@ class TowerInfo:
 @dataclass(frozen=True)
 class BudgetInfo:
     MAX_BUDGET: int = 10000
-    BUDGET: int = 150 # the default budget
+    BUDGET: int = 200 # the default budget
 
 
 

@@ -4,7 +4,8 @@ from rl.learn import *
 """
 if __name__ == "__main__":
     # run_a2c_learning()
-    run_sarsa_learning()
+    # run_sarsa_learning()
     # run_ppo_learning()
     # run_dqn_learning()
-    # run_qlearning()
+    run_qlearning()
+    # run_qrdqn_learning()

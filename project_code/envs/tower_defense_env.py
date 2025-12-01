@@ -47,7 +47,7 @@ ENEMY_SPAWN_RATE = 5
 class Reward:
     """Rewards for the environment"""
     ENEMY_DEFEATED: int = 10
-    ENEMY_REACH_BASE: int = -50
+    ENEMY_REACH_BASE: int = -15
     ENEMY_DAMAGED: int = 1
     
     TOWER_DEFEATED: int = -5
@@ -56,10 +56,11 @@ class Reward:
 
     WAVE_CLEARED: int = 20
     ALL_WAVES_CLEARED: int = 200
-    BASE_DESTROYED: int = -10
+    BASE_DESTROYED: int = -50
 
     INVALID_ACTION: int = -1
     VALID_ACTION: int = 1
+    NONE_ACTION: int = -1
 
 class GridCell(IntEnum):
     """The different grid cell types"""
@@ -85,7 +86,7 @@ class TowerDefenseEnv(gym.Env):
     def __init__(
             self,  
             size=10, 
-            num_enemies=10,
+            num_enemies=5,
             max_waves=10, 
             render_mode=None,
             render_rate=100
@@ -139,7 +140,8 @@ class TowerDefenseEnv(gym.Env):
         invalid_cells = set(self.path)
         invalid_cells.add(self.base.pos)
         self.valid_actions = []
-        self.build_steps_remaining = 3
+        self.max_build_steps = 5
+        self.build_steps_remaining = self.max_build_steps
 
         # Action 0 = do nothing
         self.valid_actions.append(("none",))
@@ -218,10 +220,16 @@ class TowerDefenseEnv(gym.Env):
         e_defeated = 0
 
         max_enemies = self.num_enemies + 2 * self.wave_count
-        
+
+        # Build during a wave 
+        if self.build_steps_remaining > 0 and self.phase == Phase.DEFEND:
+            cumulative_reward += self._build_phase_step(action)
+            self.build_steps_remaining -= 1
+
         # Beginning of wave
         if self.phase == Phase.BUILD:
             cumulative_reward += self._build_phase_step(action)
+            self.build_steps_remaining -= 1
             self.phase = Phase.DEFEND 
         
         # During a wave (one wave represents a single step)
@@ -249,6 +257,7 @@ class TowerDefenseEnv(gym.Env):
                 self.wave_count += 1
                 self.num_spawned_enemies = 0
                 self.phase = Phase.BUILD
+                self.build_steps_remaining = self.max_build_steps
 
             step_count += 1
 
@@ -289,13 +298,14 @@ class TowerDefenseEnv(gym.Env):
 
         if action[0] == "none":
             # TODO: Small neg reward for doing nothing?
+            # reward += Reward.NONE_ACTION
             return reward
 
         elif action[0] == "place":
             _, tower_type, (y, x) = action
 
             if self.grid[y, x, GridCell.TOWER] == GridCell.TOWER:
-                reward += Reward.INVALID_ACTION
+                # reward += Reward.INVALID_ACTION
                 return reward
             
             else:
