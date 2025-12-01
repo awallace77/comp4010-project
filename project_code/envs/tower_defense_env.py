@@ -141,7 +141,7 @@ class TowerDefenseEnv(gym.Env):
         invalid_cells = set(self.path)
         invalid_cells.add(self.base.pos)
         self.valid_actions = []
-        self.build_steps_remaining = 3
+        self.last_actions = []
 
         # Action 0 = do nothing
         self.valid_actions.append(("none",))
@@ -289,8 +289,11 @@ class TowerDefenseEnv(gym.Env):
 
         action = self.valid_actions[action]
 
-        if action[0] == "none":
-        action = self.valid_actions[action]
+        if action in self.last_actions:
+            reward += Reward.INVALID_ACTION  # negative reward for repeating actions
+        self.last_actions.append(action)
+        if len(self.last_actions) > 3:
+            self.last_actions.pop(0)
 
         if action[0] == "none":
             # TODO: Small neg reward for doing nothing?

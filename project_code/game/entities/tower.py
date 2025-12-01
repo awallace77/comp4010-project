@@ -119,19 +119,14 @@ class AoETower(Tower):
 
     def attack(self, enemies):
         affected = []
+        y, x = self.pos
         for e in enemies:
             ey, ex = e.pos
-            y, x = self.pos
-
-            # if(abs(ey - y) + abs(ex - x) <= self.range): # manhattan distance is within range
          
             # Deal damage to multiple enemies in a radius around the tower 
-            if abs(ey - y) <= self.range and abs(ex - x) <= self.range:
+            if (ey == y and abs(ex-x) <= self.range) or (ex == x and abs(ey-y) <= self.range):
                 e.take_damage(self.damage)
                 affected.append(e)
-            
-        for enemy in affected:
-            enemy.take_damage(self.damage)
 
         return affected
     

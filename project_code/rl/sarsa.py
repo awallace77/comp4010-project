@@ -121,9 +121,9 @@ def run_sarsa_experiments(env, eval_func, img_dest_path="", file_name=""):
         return avg_eval_returns
 
     # n_runs = 100
-    n_runs = 10
-    max_episodes = 5000
-    evaluate_every = 50
+    n_runs = 1
+    max_episodes = 10000
+    evaluate_every = 100
     n_eval = max_episodes // evaluate_every # num of evaluation during training 
 
     def save_plt():

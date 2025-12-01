@@ -13,6 +13,7 @@ from rl.qlearning import qlearning, run_qlearning_experiments, greedy_policy as 
 from rl.a2c import a2c, softmaxPolicy, run_a2c_experiments 
 from rl.sarsa import sarsa, run_sarsa_experiments, greedy_policy as sarsa_greedy_policy
 from rl.ppo import ppo, run_ppo_experiments, run_ppo_lr_experiments, greedy_policy
+from rl.baseline_qr_dqn import run_qrdqn_experiments
 """
     learn.py
     Entry point for rl learning algorithms
@@ -33,7 +34,7 @@ import os
 
 # NOTE : Please update image destination path to your dir
 num_waves = 10
-num_enemies = 7
+num_enemies = 5
 img_dest_path = "/home/andrew/cu/comp4010-project/project_code/rl/results/"
 
 def approx_max_reward(num_waves, num_enemies):
@@ -46,30 +47,31 @@ def run_qlearning():
     level = "Q-LEARNING"
     log(level, "Starting Q-Learning")
     
-    # Training    
+    # Training 
     env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
     featurizer = Featurizer(env.observation_space.shape[0])
-    start_time = time.time()
-    q_net, eval_returns = qlearning(env=env, eval_func=evaluate_policy_nn, featurizer=featurizer)
-    log(level, f"Training finished in {time.time() - start_time:.3f} seconds")
-    env.close()
-    
-    # VISUALIZE
-    env = TowerDefenseEnv(render_mode="human", render_rate=50, num_enemies=num_enemies) 
-    start_time = time.time()
-    def render_env(env: gym.Env, nn, policy_func):
-        observation = env.reset()[0]
-        while True:
-            env.render()
-            action = policy_func(observation, nn)
-            observation, reward, terminated, truncated, info = env.step(action)
-            if terminated or truncated:
-                break
 
-        env.close()
-        return
-    render_env(env, q_net, qlearning_greedy_policy)
-    log(level, f"Visualization finished in {time.time() - start_time:.3f} seconds")
+    # start_time = time.time()
+    # q_net, eval_returns = qlearning(env=env, eval_func=evaluate_policy_nn, featurizer=featurizer, max_episode=1000)
+    # log(level, f"Training finished in {time.time() - start_time:.3f} seconds")
+    # env.close()
+    
+    # # VISUALIZE
+    # env = TowerDefenseEnv(render_mode="human", render_rate=50, num_enemies=num_enemies) 
+    # start_time = time.time()
+    # def render_env(env: gym.Env, nn, policy_func):
+    #     observation = env.reset()[0]
+    #     while True:
+    #         env.render()
+    #         action = policy_func(observation, nn, featurizer)
+    #         observation, reward, terminated, truncated, info = env.step(action)
+    #         if terminated or truncated:
+    #             break
+
+    #     env.close()
+    #     return
+    # render_env(env, q_net, qlearning_greedy_policy)
+    # log(level, f"Visualization finished in {time.time() - start_time:.3f} seconds")
 
     # TESTING
     env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
@@ -78,6 +80,7 @@ def run_qlearning():
     results = run_qlearning_experiments(
         env=env, 
         eval_func=evaluate_policy_nn, 
+        featurizer=featurizer,
         img_dest_path=img_dest_path, 
         file_name=file_name)
     log(level, f"Testing finished in {time.time() - start_time:.3f} seconds")
@@ -120,29 +123,29 @@ def run_sarsa_learning():
     log(level, f"Starting SARSA Learning")
     
     # TRAINING 
-    env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
-    start_time = time.time()
-    q_net, eval_returns = sarsa(env=env, eval_func=evaluate_policy_nn, max_episode=200)
-    log(level, f"Training finished in {time.time() - start_time:.3f} seconds")
-    env.close()
+    # env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
+    # start_time = time.time()
+    # q_net, eval_returns = sarsa(env=env, eval_func=evaluate_policy_nn, max_episode=200)
+    # log(level, f"Training finished in {time.time() - start_time:.3f} seconds")
+    # env.close()
     
-    # VISUALIZE Learned Policy 
-    env = TowerDefenseEnv(render_mode="human", render_rate=50, num_enemies=num_enemies) 
-    def render_env(env: gym.Env, nn, policy_func):
-        observation = env.reset()[0]
-        while True:
-            env.render()
-            action = policy_func(observation, nn)
-            observation, reward, terminated, truncated, info = env.step(action)
-            if terminated or truncated:
-                break
+    # # VISUALIZE Learned Policy 
+    # env = TowerDefenseEnv(render_mode="human", render_rate=50, num_enemies=num_enemies) 
+    # def render_env(env: gym.Env, nn, policy_func):
+    #     observation = env.reset()[0]
+    #     while True:
+    #         env.render()
+    #         action = policy_func(observation, nn)
+    #         observation, reward, terminated, truncated, info = env.step(action)
+    #         if terminated or truncated:
+    #             break
 
-        env.close()
-        return
-    start_time = time.time()
-    render_env(env, q_net, sarsa_greedy_policy)
-    log(level, f"Visualization finished in {time.time() - start_time:.3f} seconds")
-    env.close()
+    #     env.close()
+    #     return
+    # start_time = time.time()
+    # render_env(env, q_net, sarsa_greedy_policy)
+    # log(level, f"Visualization finished in {time.time() - start_time:.3f} seconds")
+    # env.close()
 
     # TEST Learned Policy 
     env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
@@ -201,6 +204,25 @@ def run_dqn_learning():
     results = run_dqn_experiments(
         env=env, 
         eval_func=evaluate_policy_nn, 
+        img_dest_path=img_dest_path, 
+        file_name=file_name
+    )  
+    env.close()
+    
+    return results
+
+def run_qrdqn_learning():
+    num_enemies = 5
+    
+    env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
+    
+    # Use current directory for results
+    img_dest_path = os.path.dirname(os.path.abspath(__file__)) + "/results"
+    file_name = "qrdqn_learn"
+    
+    start_time = time.time()
+    results = run_qrdqn_experiments(
+        env=env, 
         img_dest_path=img_dest_path, 
         file_name=file_name
     )  
