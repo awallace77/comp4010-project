@@ -273,7 +273,7 @@ class TowerDefenseEnv(gym.Env):
         mapped_action = action
 
         if action >= self.size * self.size:
-            mapped_action = math.floor(action / 2) # reduce to fit the grid
+            mapped_action = action - (self.size * self.size) # offset to get grid position for AoE towers
 
         y, x = self._action_to_coordinate(self.size, mapped_action)
 
