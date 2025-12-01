@@ -181,24 +181,31 @@ def run_qlearning_experiments(env, eval_func, img_dest_path="", file_name=""):
 #     action = torch.argmax(q_values).item()
 #     return action
 
+# build max values vector once at module load
+_max_vals = None
+
+def _get_max_vals(size):
+    """get or create max values vector"""
+    global _max_vals
+    if _max_vals is None or len(_max_vals) != size:
+        _max_vals = torch.ones(size)
+        for i in range(100):  # 10x10 grid
+            base = i * 8
+            _max_vals[base + 0] = 2.0     # tower id
+            _max_vals[base + 1] = 5.0     # tower level
+            _max_vals[base + 2] = 10.0    # num enemies
+            _max_vals[base + 3] = 50.0    # avg enemy health
+            _max_vals[base + 4] = 50.0    # max enemy health
+            _max_vals[base + 5] = 1.0     # path
+            _max_vals[base + 6] = 1.0     # base indicator
+            _max_vals[base + 7] = 40.0    # base health
+        _max_vals[-1] = 10000.0  # budget
+    return _max_vals
+
 def normalize_state(state):
     """min-max normalization per feature"""
     s = torch.tensor(state, dtype=torch.float32)
-    
-    # build max values vector
-    max_vals = torch.ones_like(s)
-    for i in range(100):  # 10x10 grid
-        base = i * 8
-        max_vals[base + 0] = 2.0     # tower id
-        max_vals[base + 1] = 5.0     # tower level
-        max_vals[base + 2] = 10.0    # num enemies
-        max_vals[base + 3] = 50.0    # avg enemy health
-        max_vals[base + 4] = 50.0    # max enemy health
-        max_vals[base + 5] = 1.0     # path
-        max_vals[base + 6] = 1.0     # base indicator
-        max_vals[base + 7] = 40.0    # base health
-    max_vals[-1] = 10000.0  # budget
-    
+    max_vals = _get_max_vals(len(s))
     return torch.clamp(s / max_vals, 0.0, 1.0)
 
 def greedy_policy(state, q_net):
