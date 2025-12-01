@@ -36,7 +36,7 @@ class TowerInfo:
     SINGLE_TARGET_COST: int = 50
 
     AOE_HEALTH: int = 28
-    AOE_DAMAGE: int = 4
+    AOE_DAMAGE: int = 1.5
     AOE_RANGE: int = 2
     AOE_COST: int = 65
 
