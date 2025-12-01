@@ -105,24 +105,23 @@ def dqn(
     eval_returns = np.zeros(n_eval, dtype=np.float32)
     eval_index = 0
 
+    # build max values vector once
+    max_vals = np.ones(state_dim, dtype=np.float32)
+    for i in range(100):  # 10x10 grid
+        base = i * 8
+        max_vals[base + 0] = 2.0     # tower id
+        max_vals[base + 1] = 5.0     # tower level
+        max_vals[base + 2] = 10.0    # num enemies
+        max_vals[base + 3] = 50.0    # avg enemy health
+        max_vals[base + 4] = 50.0    # max enemy health
+        max_vals[base + 5] = 1.0     # path
+        max_vals[base + 6] = 1.0     # base indicator
+        max_vals[base + 7] = 40.0    # base health
+    max_vals[-1] = 10000.0  # budget
+
     def preprocess_state(state):
         """min-max normalization per feature"""
         flat = np.array(state, dtype=np.float32).reshape(-1)
-        
-        # build max values vector
-        max_vals = np.ones_like(flat)
-        for i in range(100):  # 10x10 grid
-            base = i * 8
-            max_vals[base + 0] = 2.0     # tower id
-            max_vals[base + 1] = 5.0     # tower level
-            max_vals[base + 2] = 10.0    # num enemies
-            max_vals[base + 3] = 50.0    # avg enemy health
-            max_vals[base + 4] = 50.0    # max enemy health
-            max_vals[base + 5] = 1.0     # path
-            max_vals[base + 6] = 1.0     # base indicator
-            max_vals[base + 7] = 40.0    # base health
-        max_vals[-1] = 10000.0  # budget
-        
         return np.clip(flat / max_vals, 0.0, 1.0)
 
     def get_epsilon(episode):
