@@ -47,6 +47,9 @@ In the algorithm implementation phase (Nov 15 - Nov 30), we implemented multiple
 ## Team Contributions
 Each member contributed to testing, debugging, and validating the implementations.
 
+## MISC
+- Started on rough draft in google doc for Final Report (Derrick Zhang)
+
 ## Plan for Final Week
 - Run full evaluation across all algorithms
 - Complete final report with algorithm analysis
