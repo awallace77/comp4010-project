@@ -118,24 +118,17 @@ class AoETower(Tower):
         super().__init__(pos, health, damage, range, cost)
 
     def attack(self, enemies):
+        """Attack all enemies within range (square area around tower)"""
         affected = []
+        y, x = self.pos
         for e in enemies:
             ey, ex = e.pos
-            y, x = self.pos
-
-            # if(abs(ey - y) + abs(ex - x) <= self.range): # manhattan distance is within range
-         
-            # Deal damage to multiple enemies in a radius around the tower 
+            # Deal damage to enemies in a square radius around the tower 
             if abs(ey - y) <= self.range and abs(ex - x) <= self.range:
                 e.take_damage(self.damage)
                 affected.append(e)
-            
-        for enemy in affected:
-            enemy.take_damage(self.damage)
-
+        # NOTE: Removed duplicate damage loop that was causing double damage
         return affected
     
     def get_color(self):
         return (255, 140, 0)
-
-
