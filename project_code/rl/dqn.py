@@ -106,11 +106,24 @@ def dqn(
     eval_index = 0
 
     def preprocess_state(state):
+        """min-max normalization per feature"""
         flat = np.array(state, dtype=np.float32).reshape(-1)
-        norm = np.linalg.norm(flat)
-        if norm > 0:
-            flat = flat / norm
-        return flat
+        
+        # build max values vector
+        max_vals = np.ones_like(flat)
+        for i in range(100):  # 10x10 grid
+            base = i * 8
+            max_vals[base + 0] = 2.0     # tower id
+            max_vals[base + 1] = 5.0     # tower level
+            max_vals[base + 2] = 10.0    # num enemies
+            max_vals[base + 3] = 50.0    # avg enemy health
+            max_vals[base + 4] = 50.0    # max enemy health
+            max_vals[base + 5] = 1.0     # path
+            max_vals[base + 6] = 1.0     # base indicator
+            max_vals[base + 7] = 40.0    # base health
+        max_vals[-1] = 10000.0  # budget
+        
+        return np.clip(flat / max_vals, 0.0, 1.0)
 
     def get_epsilon(episode):
         #exponential decay in episodes
@@ -158,7 +171,7 @@ def dqn(
                 q_values = q_net(batch_states)
                 q_values = q_values.gather(1, batch_actions.unsqueeze(1)).squeeze(1)
 
-                #target Q-values: r + γ * max_a' Q_target(s',a') * (1 - done)
+                #target Q-values: r + Î³ * max_a' Q_target(s',a') * (1 - done)
                 with torch.no_grad():
                     next_q_values = target_net(batch_next_states)
                     max_next_q_values, _ = torch.max(next_q_values, dim=1)
