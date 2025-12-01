@@ -156,11 +156,24 @@ def run_sarsa_experiments(env, eval_func, img_dest_path="", file_name=""):
     return results 
 
 def normalize_state(state):
+    """min-max normalization per feature"""
     s = torch.tensor(state, dtype=torch.float32)
-    norm = s.norm()
-    if norm.item() < 1e-8:
-        return s
-    return s / norm
+    
+    # build max values vector
+    max_vals = torch.ones_like(s)
+    for i in range(100):  # 10x10 grid
+        base = i * 8
+        max_vals[base + 0] = 2.0     # tower id
+        max_vals[base + 1] = 5.0     # tower level
+        max_vals[base + 2] = 10.0    # num enemies
+        max_vals[base + 3] = 50.0    # avg enemy health
+        max_vals[base + 4] = 50.0    # max enemy health
+        max_vals[base + 5] = 1.0     # path
+        max_vals[base + 6] = 1.0     # base indicator
+        max_vals[base + 7] = 40.0    # base health
+    max_vals[-1] = 10000.0  # budget
+    
+    return torch.clamp(s / max_vals, 0.0, 1.0)
 
 def greedy_policy(state, q_net):
     if not isinstance(state, torch.Tensor):
@@ -175,4 +188,4 @@ def e_greedy(env, state, q_net, epsilon):
     if np.random.rand() < epsilon:
         return env.action_space.sample()
     else:
-        return greedy_policy(state, q_net) 
+        return greedy_policy(state, q_net)
