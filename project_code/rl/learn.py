@@ -118,30 +118,30 @@ def run_sarsa_learning():
     level = "SARSA"
     log(level, f"Starting SARSA Learning")
     
-    # # TRAINING 
-    # env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
-    # start_time = time.time()
-    # q_net, eval_returns = sarsa(env=env, eval_func=evaluate_policy_nn)
-    # log(level, f"Training finished in {time.time() - start_time:.3f} seconds")
-    # env.close()
+    # TRAINING 
+    env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
+    start_time = time.time()
+    q_net, eval_returns = sarsa(env=env, eval_func=evaluate_policy_nn, max_episode=200)
+    log(level, f"Training finished in {time.time() - start_time:.3f} seconds")
+    env.close()
     
-    # # VISUALIZE Learned Policy 
-    # env = TowerDefenseEnv(render_mode="human", render_rate=50, num_enemies=num_enemies) 
-    # def render_env(env: gym.Env, nn, policy_func):
-    #     observation = env.reset()[0]
-    #     while True:
-    #         env.render()
-    #         action = policy_func(observation, nn)
-    #         observation, reward, terminated, truncated, info = env.step(action)
-    #         if terminated or truncated:
-    #             break
+    # VISUALIZE Learned Policy 
+    env = TowerDefenseEnv(render_mode="human", render_rate=50, num_enemies=num_enemies) 
+    def render_env(env: gym.Env, nn, policy_func):
+        observation = env.reset()[0]
+        while True:
+            env.render()
+            action = policy_func(observation, nn)
+            observation, reward, terminated, truncated, info = env.step(action)
+            if terminated or truncated:
+                break
 
-    #     env.close()
-    #     return
-    # start_time = time.time()
-    # render_env(env, q_net, sarsa_greedy_policy)
-    # log(level, f"Visualization finished in {time.time() - start_time:.3f} seconds")
-    # env.close()
+        env.close()
+        return
+    start_time = time.time()
+    render_env(env, q_net, sarsa_greedy_policy)
+    log(level, f"Visualization finished in {time.time() - start_time:.3f} seconds")
+    env.close()
 
     # TEST Learned Policy 
     env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
