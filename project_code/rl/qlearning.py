@@ -55,6 +55,16 @@ def qlearning(
             # Normalize for nn
             state_tensor = normalize_state(state)
             next_state_tensor = normalize_state(next_state)
+            state_tensor = featurizer.featurize(state)
+            if isinstance(state_tensor, torch.Tensor):
+                state_tensor = state_tensor.detach().clone().float()
+
+            next_state_tensor = featurizer.featurize(next_state)
+            if isinstance(next_state_tensor, torch.Tensor):
+                next_state_tensor = next_state_tensor.detach().clone().float()
+
+            # state_tensor = torch.tensor(featurizer.featurize(state), dtype=torch.float32)
+            # next_state_tensor = torch.tensor(featurizer.featurize(next_state), dtype=torch.float32)
 
             q_values = q_net(state_tensor.unsqueeze(0))
             q_current = q_values[0, action]
@@ -129,9 +139,9 @@ def run_qlearning_experiments(env, eval_func, img_dest_path="", file_name=""):
         return avg_eval_returns
 
     # n_runs = 100
-    n_runs = 1
-    max_episodes = 5000
-    evaluate_every = 50
+    n_runs = 10
+    max_episodes = 2000
+    evaluate_every = 20
     n_eval = max_episodes // evaluate_every # num of evaluation during training 
 
     def save_plt():
@@ -161,64 +171,3 @@ def run_qlearning_experiments(env, eval_func, img_dest_path="", file_name=""):
     save_plt()
     
     return results 
-
-# def e_greedy(env, state, q_net, epsilon):
-#     """
-#         Returns e-greedy action for a given state
-#     """
-#     if torch.rand(1).item() < epsilon:
-#         return env.action_space.sample()
-#     else:
-#         with torch.no_grad():
-#             return greedy_policy(state, q_net)
-
-
-# def greedy_policy(state, q_net):
-#     """
-#         Returns best action for given state
-#     """
-#     q_values = q_net(torch.tensor(state, dtype=torch.float32).unsqueeze(0))
-#     action = torch.argmax(q_values).item()
-#     return action
-
-# build max values vector once at module load
-_max_vals = None
-
-def _get_max_vals(size):
-    """get or create max values vector"""
-    global _max_vals
-    if _max_vals is None or len(_max_vals) != size:
-        _max_vals = torch.ones(size)
-        for i in range(100):  # 10x10 grid
-            base = i * 8
-            _max_vals[base + 0] = 2.0     # tower id
-            _max_vals[base + 1] = 5.0     # tower level
-            _max_vals[base + 2] = 10.0    # num enemies
-            _max_vals[base + 3] = 50.0    # avg enemy health
-            _max_vals[base + 4] = 50.0    # max enemy health
-            _max_vals[base + 5] = 1.0     # path
-            _max_vals[base + 6] = 1.0     # base indicator
-            _max_vals[base + 7] = 40.0    # base health
-        _max_vals[-1] = 10000.0  # budget
-    return _max_vals
-
-def normalize_state(state):
-    """min-max normalization per feature"""
-    s = torch.tensor(state, dtype=torch.float32)
-    max_vals = _get_max_vals(len(s))
-    return torch.clamp(s / max_vals, 0.0, 1.0)
-
-def greedy_policy(state, q_net):
-    if not isinstance(state, torch.Tensor):
-        s = normalize_state(state)
-    else:
-        s = state / (state.norm() + 1e-8)
-    with torch.no_grad():
-        q_vals = q_net(s.unsqueeze(0))
-        return int(torch.argmax(q_vals, dim=1).item())
-
-def e_greedy(env, state, q_net, epsilon):
-    if np.random.rand() < epsilon:
-        return env.action_space.sample()
-    else:
-        return greedy_policy(state, q_net)

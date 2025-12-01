@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import BaseCallback
+from stable_baselines3.common.callbacks import BaseCallback, EvalCallback
 from stable_baselines3.common.vec_env import DummyVecEnv
 
 """
@@ -59,8 +59,8 @@ def ppo(
     # Create evaluation callback
     eval_callback = EvalCallback(
         eval_env=eval_env,
-        eval_func=eval_func,
-        evaluate_every=evaluate_every,
+        # eval_func=eval_func,
+        eval_freq=evaluate_every,
         verbose=verbose
     )
     

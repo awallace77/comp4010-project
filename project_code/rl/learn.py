@@ -9,7 +9,7 @@ from rl.utils import evaluate_policy_fa, evaluate_policy_nn, render_env, log
 from rl.featurizers.tile_coder_featurizer import TileCoder
 
 # Algo imports
-from rl.qlearning import qlearning, run_qlearning_experiments, greedy_policy as qlearning_greedy_policy
+from rl.qlearning import qlearning, run_qlearning_experiments, greedy_policy as qlearning_greedy_policy, Featurizer
 from rl.a2c import a2c, softmaxPolicy, run_a2c_experiments 
 from rl.sarsa import sarsa, run_sarsa_experiments, greedy_policy as sarsa_greedy_policy
 from rl.ppo import ppo, run_ppo_experiments, run_ppo_lr_experiments, greedy_policy
@@ -46,29 +46,30 @@ def run_qlearning():
     level = "Q-LEARNING"
     log(level, "Starting Q-Learning")
     
-    # # TRAINING 
-    # env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
-    # start_time = time.time()
-    # q_net, eval_returns = qlearning(env=env, eval_func=evaluate_policy_nn)
-    # log(level, f"Training finished in {time.time() - start_time:.3f} seconds")
-    # env.close()
+    # Training    
+    env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
+    featurizer = Featurizer(env.observation_space.shape[0])
+    start_time = time.time()
+    q_net, eval_returns = qlearning(env=env, eval_func=evaluate_policy_nn, featurizer=featurizer)
+    log(level, f"Training finished in {time.time() - start_time:.3f} seconds")
+    env.close()
     
-    # # VISUALIZE
-    # env = TowerDefenseEnv(render_mode="human", render_rate=50, num_enemies=num_enemies) 
-    # start_time = time.time()
-    # def render_env(env: gym.Env, nn, policy_func):
-    #     observation = env.reset()[0]
-    #     while True:
-    #         env.render()
-    #         action = policy_func(observation, nn)
-    #         observation, reward, terminated, truncated, info = env.step(action)
-    #         if terminated or truncated:
-    #             break
+    # VISUALIZE
+    env = TowerDefenseEnv(render_mode="human", render_rate=50, num_enemies=num_enemies) 
+    start_time = time.time()
+    def render_env(env: gym.Env, nn, policy_func):
+        observation = env.reset()[0]
+        while True:
+            env.render()
+            action = policy_func(observation, nn)
+            observation, reward, terminated, truncated, info = env.step(action)
+            if terminated or truncated:
+                break
 
-    #     env.close()
-    #     return
-    # render_env(env, q_net, qlearning_greedy_policy)
-    # log(level, f"Visualization finished in {time.time() - start_time:.3f} seconds")
+        env.close()
+        return
+    render_env(env, q_net, qlearning_greedy_policy)
+    log(level, f"Visualization finished in {time.time() - start_time:.3f} seconds")
 
     # TESTING
     env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 

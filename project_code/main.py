@@ -8,3 +8,6 @@ if __name__ == "__main__":
     # run_ppo_learning()
     # run_dqn_learning()
     # run_qlearning()
+    # run_ppo_learning()
+    # run_dqn_learning()
+    # run_qrdqn_learning()

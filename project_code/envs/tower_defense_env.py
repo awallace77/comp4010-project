@@ -57,8 +57,10 @@ class Reward:
     WAVE_CLEARED: int = 20
     ALL_WAVES_CLEARED: int = 200
     BASE_DESTROYED: int = -10
+    BASE_NO_DAMAGE: int = 0.1
 
     INVALID_ACTION: int = -1
+    VALID_ACTION: int = 1
     VALID_ACTION: int = 1
 
 class GridCell(IntEnum):
@@ -288,6 +290,9 @@ class TowerDefenseEnv(gym.Env):
         action = self.valid_actions[action]
 
         if action[0] == "none":
+        action = self.valid_actions[action]
+
+        if action[0] == "none":
             # TODO: Small neg reward for doing nothing?
             return reward
 
@@ -364,6 +369,8 @@ class TowerDefenseEnv(gym.Env):
                 self.base.take_damage(enemy.damage)
                 reward += Reward.ENEMY_REACH_BASE
                 enemies_to_remove.append(i)
+            else:
+                reward += Reward.BASE_NO_DAMAGE
 
         # Remove enemies that reached the base
         for idx in reversed(enemies_to_remove):
