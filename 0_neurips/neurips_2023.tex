@@ -7,12 +7,12 @@
 
 
 % ready for submission
-\usepackage{neurips_2023}
+%\usepackage{neurips_2023}
 
 
 % to compile a preprint version, e.g., for submission to arXiv, add add the
 % [preprint] option:
-%     \usepackage[preprint]{neurips_2023}
+\usepackage[preprint]{neurips_2023}
 
 
 % to compile a camera-ready version, add the [final] option, e.g.:
@@ -34,7 +34,7 @@
 \usepackage{xcolor}         % colors
 
 
-\title{Formatting Instructions For NeurIPS 2023}
+\title{Comp 4010 Final Report}
 
 
 % The \author macro works with any number of authors. There are two commands
@@ -46,35 +46,22 @@
 % \AND instead of \And before the third author name.
 
 
-\author{%
-  David S.~Hippocampus\thanks{Use footnote for providing further information
-    about author (webpage, alternative address)---\emph{not} for acknowledging
-    funding agencies.} \\
-  Department of Computer Science\\
-  Cranberry-Lemon University\\
-  Pittsburgh, PA 15213 \\
-  \texttt{hippo@cs.cranberry-lemon.edu} \\
-  % examples of more authors
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \AND
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
+\author{
+  Andrew Wallace\\
+  101210291\\
+  \texttt{andrewwallace3@cmail.carleton.ca}
+  \AND
+  Derrick Zhang\\
+  101232374\\
+  \texttt{derrickzhang@cmail.carleton.ca}
+  \AND
+  Mohammad Rehman\\
+  101220514\\
+  \texttt{mohammadrehman@cmail.carleton.ca}
+  \AND
+  Manal Hassan\\
+  101263813\\
+  \texttt{manalhassa@cmail.carleton.ca}
 }
 
 
@@ -82,6 +69,9 @@
 
 
 \maketitle
+
+\author{Derrick Zhang - 101232374}
+
 
 
 \begin{abstract}
@@ -93,108 +83,45 @@
 \end{abstract}
 
 
-\section{Submission of papers to NeurIPS 2023}
+\section{Introduction}
+
+\subsection{Project focus}
+
+Tower defence is a strategy game where the goal is to place defensive structures to obstruct and defeat waves of enemies from reaching a goal. This is done by placing and upgrading towers along the attacker’s path. The towers are stationary objects that the agent places to attack enemies. These towers have a cost to create and upgrade, meaning the agent must gather resources to do so. In traditional tower defence games, the player starts with a set number of resources and can obtain more after successfully defending from a wave or defeating enemies. The defensive tower upgrades can vary in range and damage.\\\\
+The objective of this project is to train an agent using reinforcement learning (RL) methods to learn an optimal policy for tower placement that maximises survival and minimises damage taken from enemies. Unlike traditional tower defence games with manual upgrades, our environment features towers that automatically evolve and strengthen based on the number of enemies they eliminate, creating a feedback loop between decisions and long-term strategy when it comes to positioning.
 
 
-Please read the instructions below carefully and follow them faithfully. \textbf{Important:} This year the checklist will be submitted separately from the main paper in OpenReview, please review it well ahead of the submission deadline: \url{https://neurips.cc/public/guides/PaperChecklist}.
+
+\subsection{Importance of the problem}
 
 
-\subsection{Style}
+Exploring RL for tower defense is extremely valuable. Applying RL methods in high-dimensional state and action spaces, challenging reward structures, and its application in balancing short and long-term investment, giving us valuable insights into the capabilities of RL in highly transferrable domains.
 
 
-Papers to be submitted to NeurIPS 2023 must be prepared according to the
-instructions presented here. Papers may only be up to {\bf nine} pages long,
-including figures. Additional pages \emph{containing only acknowledgments and
-references} are allowed. Papers that exceed the page limit will not be
-reviewed, or in any other way considered for presentation at the conference.
-
-
-The margins in 2023 are the same as those in previous years.
-
-
-Authors are required to use the NeurIPS \LaTeX{} style files obtainable at the
-NeurIPS website as indicated below. Please make sure you use the current files
-and not previous versions. Tweaking the style files may be grounds for
-rejection.
-
-
-\subsection{Retrieval of style files}
-
-
-The style files for NeurIPS and other conference information are available on
-the website at
-\begin{center}
-  \url{http://www.neurips.cc/}
-\end{center}
-The file \verb+neurips_2023.pdf+ contains these instructions and illustrates the
-various formatting requirements your NeurIPS paper must satisfy.
-
-
-The only supported style file for NeurIPS 2023 is \verb+neurips_2023.sty+,
-rewritten for \LaTeXe{}.  \textbf{Previous style files for \LaTeX{} 2.09,
-  Microsoft Word, and RTF are no longer supported!}
-
-
-The \LaTeX{} style file contains three optional arguments: \verb+final+, which
-creates a camera-ready copy, \verb+preprint+, which creates a preprint for
-submission to, e.g., arXiv, and \verb+nonatbib+, which will not load the
-\verb+natbib+ package for you in case of package clash.
-
-
-\paragraph{Preprint option}
-If you wish to post a preprint of your work online, e.g., on arXiv, using the
-NeurIPS style, please use the \verb+preprint+ option. This will create a
-nonanonymized version of your work with the text ``Preprint. Work in progress.''
-in the footer. This version may be distributed as you see fit, as long as you do not say which conference it was submitted to. Please \textbf{do
-  not} use the \verb+final+ option, which should \textbf{only} be used for
-papers accepted to NeurIPS. 
-
-
-At submission time, please omit the \verb+final+ and \verb+preprint+
-options. This will anonymize your submission and add line numbers to aid
-review. Please do \emph{not} refer to these line numbers in your paper as they
-will be removed during generation of camera-ready copies.
-
-
-The file \verb+neurips_2023.tex+ may be used as a ``shell'' for writing your
-paper. All you have to do is replace the author, title, abstract, and text of
-the paper with your own.
+\subsection{MDP specifications}
+To Be added
 
 
 The formatting instructions contained in these style files are summarized in
 Sections \ref{gen_inst}, \ref{headings}, and \ref{others} below.
 
 
-\section{General formatting instructions}
+\section{Approaches}
 \label{gen_inst}
 
+\subsection{Prior work}
 
-The text must be confined within a rectangle 5.5~inches (33~picas) wide and
-9~inches (54~picas) long. The left margin is 1.5~inch (9~picas).  Use 10~point
-type with a vertical spacing (leading) of 11~points.  Times New Roman is the
-preferred typeface throughout, and will be selected for you by default.
-Paragraphs are separated by \nicefrac{1}{2}~line space (5.5 points), with no
-indentation.
+Previous work by Maria Manolaki also focused on implementing reinforcement learning (RL) for tower defence for learning an optimal policy [2]. However, in their implementation, the enemy was the artificial intelligence agent. The agent’s goal was to learn an optimal policy to win the game. This involves the enemy avoiding towers and finding the best path to the base. They implemented the A2C algorithm to provide the enemy with intelligence needed to reach the base. Our implementation differs, focusing only on the player agent. It would be interesting to build on this by deploying a multi-agent interaction between a player and an enemy agent and  analyze their interaction.\\\\
+Another application of RL for tower defence was implemented by Timothée Blondiaux et al. for Plants vs. Zombies, a popular tower defence game consisting of plants as towers and zombies as enemies [1]. They implemented a wide array of RL methods, including A2C, Monte-Carlo policy gradient, Deep Q-Networks (DQN), and Double Deep Q-Networks (DDQN). They observed good results with the DDQN algorithm, beating difficult levels 65\% of the time [1].\\\\
+A more general approach was taken in a study by Abhinav Wasukar and Sumitra Jakhete, looking at the application of the DQN and PPO algorithms in various game environments, including tower defence. They found that PPO significantly outperformed DQN, achieving a much higher average return. However, DQN showed lower variance and was more consistent  across runs [5]. \\\\
+One interesting (and indirect) study done by Baylor Wetzel, studied Transfer Learning in a tower defence environment. Transfer learning is the process of using knowledge gained while solving one problem to solve a new, previously unencountered problem [6].  In this study, they collected data from human reported solutions to a tower defence game. They used these solutions to create computational agents to model human strategies. Then, a domain expert was asked to tell apart the human-made tower placements from the computer-generated ones - they could not tell the difference [6]. This approach focuses on modelling human behaviour rather than achieving optimal performance.\\\\
+ A similar study done by Augusto Dias et al., utilized game metadata as inputs to a Deep Q-Learning agent rather than video frames or pixel information [7]. They found that no other work reported developing autonomous agents to play tower defence games (2020) and that using metadata as input reduced computational complexity [7]. This is similar to our implementation where state is represented by the game metadata. 
 
+\subsection{Our Approaches}
 
-The paper title should be 17~point, initial caps/lower case, bold, centered
-between two horizontal rules. The top rule should be 4~points thick and the
-bottom rule should be 1~point thick. Allow \nicefrac{1}{4}~inch space above and
-below the title to rules. All pages should start at 1~inch (6~picas) from the
-top of the page.
-
-
-For the final version, authors' names are set in boldface, and each name is
-centered above the corresponding address. The lead author's name is to be listed
-first (left-most), and the co-authors' names (if different address) are set to
-follow. If there is only one co-author, list both author and co-author side by
-side.
-
-
-Please pay special attention to the instructions in Section \ref{others}
-regarding figures, tables, acknowledgments, and references.
-
-
+Our project differs from these works through the automatic tower level-up mechanism and unique approach to action and state space reduction. In our environment, towers level up automatically based on the number of enemies they kill without explicit user input. This adds a layer of complexity for learning optimal solutions. That is, balancing strategic placement for tower level-ups and successful long term  defence.\\\\
+The tower defence environment has a high dimensional and continuous state, with a large discrete action space. This makes tabular based learning methods infeasible. Conventional methods such as Tabular Q-Learning or SARSA cannot store Q-tables for an infinite space. So, we first chose SARSA with function approximation to handle the high dimensional state space. Also, being an on-policy algorithm, SARSA allows for sufficient coverage of the large action space. Note that linear function approximation struggles with the large state space, so a Q-network was used for the function approximation. Next, we looked at the Advantage Actor Critic Algorithm (A2C) which works with continuous state spaces and discrete action spaces [8]. Actor-Critic are policy gradient algorithms that optimize the policy directly through learned parameters. This allows us to tune the policy to reduce variance seen in methods such as SARSA (e.g., reducing actor step size). \\\\
+However, SARSA and A2C are on-policy algorithms, making  convergence to a stable optimal policy difficult. We then explored Deep Q-Learning with Q-Networks to avoid the on-policy nature of SARSA, and utilized a replay buffer to reduce variance. 
 \section{Headings: first level}
 \label{headings}
 
@@ -452,35 +379,57 @@ Do {\bf not} include this section in the anonymized submission, only in the fina
 Authors may wish to optionally include extra information (complete proofs, additional experiments and plots) in the appendix. All such materials should be part of the supplemental material (submitted separately) and should NOT be included in the main submission.
 
 
-\section*{References}
-
-
-References follow the acknowledgments in the camera-ready paper. Use unnumbered first-level heading for
-the references. Any choice of citation style is acceptable as long as you are
-consistent. It is permissible to reduce the font size to \verb+small+ (9 point)
-when listing the references.
-Note that the Reference section does not count towards the page limit.
-\medskip
-
-
 {
 \small
 
+\begin{thebibliography}{8}
 
-[1] Alexander, J.A.\ \& Mozer, M.C.\ (1995) Template-based algorithms for
-connectionist rule extraction. In G.\ Tesauro, D.S.\ Touretzky and T.K.\ Leen
-(eds.), {\it Advances in Neural Information Processing Systems 7},
-pp.\ 609--616. Cambridge, MA: MIT Press.
+\bibitem{blondiaux_pvz}
+T.~Blondiaux, L.~Frank, H.~Gebran, and A.~Perot.
+\newblock \textit{Plants vs.\ Zombies: Reinforcement Learning to a Tower Defense Game}.
+\newblock Online report. Available: \url{https://hanadyg.github.io/portfolio/report/INF581_report.pdf}.
 
+\bibitem{manolaki_td_rl}
+M.~Manolaki.
+\newblock \textit{Development of a Tower Defense Game with Reinforcement Learning Agents}.
+\newblock Nov.\ 2020.
 
-[2] Bower, J.M.\ \& Beeman, D.\ (1995) {\it The Book of GENESIS: Exploring
-  Realistic Neural Models with the GEneral NEural SImulation System.}  New York:
-TELOS/Springer--Verlag.
+\bibitem{weng_policy_gradient}
+L.~Weng.
+\newblock \textit{Policy Gradient Algorithms}.
+\newblock Lil'Log, Apr.\ 8, 2018. \url{https://lilianweng.github.io/posts/2018-04-08-policy-gradient/}.
+\newblock Accessed: Dec.\ 5, 2025.
 
+\bibitem{bergdahl2024_td}
+J.~Bergdahl, A.~Sestini, and L.~Gissl{\'e}n.
+\newblock \textit{Reinforcement Learning for High-Level Strategic Control in Tower Defense Games}.
+\newblock arXiv:2406.07980, Jun.\ 12, 2024. \url{https://arxiv.org/pdf/2406.07980}.
+\newblock Accessed: Dec.\ 6, 2025.
 
-[3] Hasselmo, M.E., Schnell, E.\ \& Barkai, E.\ (1995) Dynamics of learning and
-recall at excitatory recurrent synapses and cholinergic modulation in rat
-hippocampal region CA3. {\it Journal of Neuroscience} {\bf 15}(7):5249-5262.
+\bibitem{wasukar2024_dqn_ppo}
+A.~Wasukar and S.~Jakhete.
+\newblock \textit{Comparative Study of Reinforcement Learning Methods: DQN vs PPO in a Game}.
+\newblock Dec.\ 2024. \url{https://pijet.org/papers/volume-2%20issue-1/Final%20Revised%20Paper_Pijet-07_Done.pdf}.
+\newblock Accessed: Dec.\ 6, 2025.
+
+\bibitem{wetzel2011_transfer}
+B.~Wetzel.
+\newblock \textit{Transfer Learning in Spatial Reasoning Puzzles}.
+\newblock In \textit{Proceedings of IJCAI 2011}.
+\newblock Available: \url{https://www.ijcai.org/Proceedings/11/Papers/504.pdf}. Accessed: Dec.\ 6, 2025.
+
+\bibitem{dias2022_td}
+A.~Dias, J.~Foleiss, and R.~P.~Lopes.
+\newblock Reinforcement learning in tower defense.
+\newblock \textit{Communications in Computer and Information Science}, pp.\ 127--139, 2022.
+\newblock doi: \url{https://doi.org/10.1007/978-3-030-95305-8_10}.
+
+\bibitem{masteringrl_actor_critic}
+Mastering Reinforcement Learning.
+\newblock \textit{Actor-critic methods --- Mastering Reinforcement Learning}.
+\newblock 2023. \url{https://gibberblot.github.io/rl-notes/single-agent/actor-critic.html}.
+
+\end{thebibliography}
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
