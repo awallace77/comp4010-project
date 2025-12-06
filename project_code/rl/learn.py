@@ -14,7 +14,7 @@ from rl.a2c import a2c, softmaxPolicy, run_a2c_experiments
 from rl.sarsa import sarsa, run_sarsa_experiments, greedy_policy as sarsa_greedy_policy
 from rl.ppo import ppo, run_ppo_experiments, run_ppo_lr_experiments, greedy_policy
 from rl.qrdqn import run_qrdqn_experiments
-
+from rl.a2c_sb3 import run_a2c_sb3_experiments
 """
     learn.py
     Entry point for rl learning algorithms
@@ -95,19 +95,19 @@ def run_a2c_learning():
     log(level, f"Starting A2C Learning")
 
     # TRAINING 
-    env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
-    featurizer = TileCoder(env, num_tilings=16, tiles_per_dim=8, max_size=8192)
-    start_time = time.time()
-    Theta, w, eval_returns = a2c(env, featurizer, evaluate_policy_fa)
-    log(level, f"Training finished in {time.time() - start_time:.3f} seconds")
-    env.close()
+    # env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
+    # featurizer = TileCoder(env, num_tilings=16, tiles_per_dim=8, max_size=8192)
+    # start_time = time.time()
+    # Theta, w, eval_returns = a2c(env, featurizer, evaluate_policy_fa)
+    # log(level, f"Training finished in {time.time() - start_time:.3f} seconds")
+    # env.close()
     
-    # VISUALIZE
-    start_time = time.time()
-    env = TowerDefenseEnv(render_mode="human", render_rate=50, num_enemies=num_enemies) 
-    render_env(env, featurizer, Theta, softmaxPolicy)
-    log(level, f"Visualization finished in {time.time() - start_time:.3f} seconds")
-    env.close()
+    # # VISUALIZE
+    # start_time = time.time()
+    # env = TowerDefenseEnv(render_mode="human", render_rate=50, num_enemies=num_enemies) 
+    # render_env(env, featurizer, Theta, softmaxPolicy)
+    # log(level, f"Visualization finished in {time.time() - start_time:.3f} seconds")
+    # env.close()
 
     # EVALUATE 
     env = TowerDefenseEnv(render_mode=None, num_enemies=num_enemies) 
@@ -119,6 +119,27 @@ def run_a2c_learning():
     env.close()
 
     return
+
+
+def run_a2c_sb3_learning():
+    level = "A2C-SB3"
+    env = TowerDefenseEnv(render_mode=None, num_enemies=5)
+    file_name = "a2c_sb3"
+    start_time = time.time()
+    img_dest_path = os.path.join(os.path.dirname(__file__), "results")
+
+    log(level, f"Starting testing")
+    results = run_a2c_sb3_experiments(
+        env=env,
+        img_dest_path=img_dest_path,
+        file_name=file_name
+    )
+    log(level, f"Testing finished in {time.time() - start_time:.3f} seconds")
+    env.close()
+
+    return
+
+
 
 def run_sarsa_learning():
     level = "SARSA"

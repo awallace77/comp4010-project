@@ -9,6 +9,43 @@ from stable_baselines3.common.vec_env import DummyVecEnv
     PPO implementation using Stable-Baselines3 library.
 """
 
+
+class EvalCallback(BaseCallback):
+    #  callback for periodic evaluation during training."""
+    
+    def __init__(self, eval_env, eval_func, evaluate_every=20, verbose=1):
+        super().__init__(verbose)
+        self.eval_env = eval_env
+        self.eval_func = eval_func
+        self.evaluate_every = evaluate_every
+        self.eval_returns = []
+        self.episode_count = 0
+    
+    def _on_step(self) -> bool:
+        # Check if episode finished
+        if self.locals.get("dones", [False])[0]:
+            self.episode_count += 1
+            
+            if self.episode_count % self.evaluate_every == 0:
+                # Evaluate using the provided eval_func
+                eval_return = self.eval_func(
+                    self.eval_env.envs[0],
+                    lambda s: greedy_policy(s, self.model)
+                )
+                self.eval_returns.append(eval_return)
+                
+                if self.verbose > 0:
+                    print(f"[PPO] Episode {self.episode_count}, Eval Return: {eval_return:.2f}")
+        
+        return True
+
+
+def greedy_policy(state, model):
+    # Get greedy action from trained PPO model.
+    action, _ = model.predict(state, deterministic=True)
+    return action
+
+
 def ppo(
         env,
         eval_func,
@@ -73,12 +110,6 @@ def ppo(
     )
     
     return model, eval_callback.eval_returns
-
-
-def greedy_policy(state, model):
-    # Returns the best action for given state using SB3 model.
-    action, _ = model.predict(state, deterministic=True)
-    return action
 
 
 def stochastic_policy(state, model):
@@ -183,12 +214,12 @@ def run_ppo_lr_experiments(env, eval_func, img_dest_path="", file_name=""):
         avg_eval_returns = np.mean(padded_runs, axis=0)
         return avg_eval_returns
     
-    n_runs = 5
-    max_episodes = 500
-    evaluate_every = 20
+    n_runs = 1
+    max_episodes = 2000
+    evaluate_every = 50
     
     # Learning rate variations
-    learning_rate_list = [1e-3, 3e-4, 1e-4, 3e-5]
+    learning_rate_list = [1e-3, 3e-4, 3e-5]
     results = []
     
     np.random.seed(101210291)

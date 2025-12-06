@@ -118,7 +118,7 @@ def run_a2c_experiments(env, featurizer, eval_func, img_dest_path="", file_name=
         return avg_eval_returns
 
     n_runs = 1
-    max_episodes = 10000
+    max_episodes = 1000
     evaluate_every = 50
     n_eval = max_episodes // evaluate_every # num of evaluation during training
 
