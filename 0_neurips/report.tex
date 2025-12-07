@@ -128,7 +128,7 @@ However, SARSA and A2C are on-policy algorithms, making convergence to a stable 
 \section{Empirical studies}
 
 \subsection{Q-learning}
-We implemented Q-learning using a simple 3-layer Q-network as our function approximator and a target network to stabilize updates. The Q-network allowed us to learn in a high dimensional state and action space where tabular Q-learning would be infeasible. The space complexity for tabular learning would be $O(|S| x |A|)$. Specifically, $O(11^{v(n)})$, where $v(n) = 49$ valid squares for $n= 10$ ($10 \times 10$ grid).
+We implemented Q-learning using a simple 3-layer Q-network as our function approximator and a target network to stabilize updates. The Q-network allowed us to learn in a high dimensional state and action space where tabular Q-learning would be infeasible. The space complexity for tabular learning would be $O(|S| x |A|)$.
 
 The target network was implemented to reduce variance and stabilize learning across episodes. However, this approach did not yield good results. As seen in Figure~\ref{fig:q_learning_performance}, no convergence and instability in learning. 
 
