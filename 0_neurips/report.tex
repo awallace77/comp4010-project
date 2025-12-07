@@ -189,6 +189,22 @@ For the DQN experiments, the agent observes the flattened metadata state vector 
 Figure X summarizes the learning curves for the three learning rates (0.001, 0.0005, 0.0001). Each configuration was trained for 2,500 episodes and evaluated every 50 episodes for 1 run. All three learning rates show an overall upward trend, indicating that DQN is able to exploit experience replay and the target network to improve performance over time rather than diverging, unlike the earlier Q-learning baseline. The largest learning rate (0.001) achieves the fastest performance gains and reaches the highest final average return, although the curve being more volatile than the others since the update step is larger. The intermediate rate (0.0005) learns more slowly but exhibits a smoother curve with fewer sharp drops, while the smallest rate (0.0001) produces the most stable but also the lowest returns, this suggests underfitting and a very slow propagation of reward information due to the sparse and delayed rewards.\\\\
 Overall, these results suggest that DQN is the most effective algorithm that we tested being significantly more effective than our vanilla Q-learning and SARSA with neural function approximation, which showed little convergence and high instability. However, the DQN curves are still quite volatile, reflecting the difficulty of learning in a high-dimensional, stochastic environment with delayed rewards. The sensitivity to the learning rate visible in the figure indicates that larger step sizes can unlock higher returns but at the cost of higher variance, while smaller step sizes are more stable but may fail to fully exploit the environment within a fixed training budget.
 
+\subsubsection{Quantile Regression DQN (QR-DQN)}
+To attempt to address the instability observed in standard DQN, we implemented Quantile Regression DQN (QR-DQN), which is a distributional RL algorithm. Rather than learning a single expected Q-value, QR-DQN models the full distribution of returns using a set of quantiles. This may provide better information about uncertainty in value estimates, which can improve learning stability, especially in a more stochastic environment like this. This algorithm was implemented using the SB3 library with 50 quantiles. 
+
+Our experiment ran for 100,000 timesteps, evaluating every 5,000 and averaging over 3 runs. Three learning rates were tested: 0.001, 0.0005, and 0.0001. The results are shown in Figure~\ref{fig:qrdqn_performance}.
+
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{figures/qrdqn_learn.png}
+  \caption{QR-DQN performance with different learning rates.}
+  \label{fig:qrdqn_performance}
+\end{figure}
+
+The highest learning rate (0.001) showed steady improvement throughout training, reaching an average evaluated return of around 7,000 by the end. Despite an initial dip around 35,000 timesteps, the algorithm recovered and showed consistent upward progress. The middle learning rate (0.0005) exhibited faster early learning, peaking at approximately 6,500 around 55,000 timesteps. However, performance degraded in later timesteps, suggesting that there may have been overfitting or oscillation happening. The lowest learning rate (0.0001) failed to learn effectively, remaining near zero with one spike around 35,000 timesteps, suggesting that there was insufficient adaptation.
+
+QR-DQN outperformed both Q-learning and SARSA, but it did not surpass standard DQN, which achieved returns in a much higher range. The more complex modelling of returns may have hindered the learning efficiency within the training budget. As well, the approach of this algorithm added computational overhead and training time without much benefit. The simpler DQN with experience replay appears better suited for this environment.
+
 
 
 \section{Conclusion}
