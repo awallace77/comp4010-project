@@ -92,14 +92,25 @@ The objective of this project is to train an agent using reinforcement learning 
 Exploring RL for tower defence is extremely valuable. Applying RL methods in high-dimensional state and action spaces, challenging reward structures, and its application in balancing short and long-term investment, giving us valuable insights into the capabilities of RL in highly transferrable domains.
 
 \subsection{MDP specifications}
-To Be added
+The state space is represented as a 3d box the shape of [ 10, 10, [8] ], 10 and 10 representing the x, y coordinate of a cell on the grid and the third dimension being an array containing:\\\\Tower ID , Tower Level , Number Of Enemies, Average Health Of Enemies, Enemy With The Highest Health Value, If The Cell Has An Enemy, If The Cell Is The Base, and The health of the base.\\\\The state space would be the addition of all the max possible values of the third dimension to the power of cell on the grid:\\\\
+\[(3+6+11+51+51+2+2+41)^{100} = 167^{100}\] \\\\ The action space is of size 97, the agent can either do nothing or place one of two types of turrets on the 49 viable positions on the grid. The agent has the choice of placing down a single target tower, an area of effect tower or do nothing. In this project the agent acts in phases, there’s a build phase and a defense phase. In the build phase the agent is allowed to place one of two types of towers or be inactive. While in the defense phase, the agent is allowed to place towers so long as he has the budget to, but the waves of enemies will begin spawning.\\\\The reward structure is the following:\\\\
+Enemy Defeated = +10\\
+Enemy Reaches Base  = -15\\
+Enemy Damaged = +1\\
+Tower Level’s up = +5\\
+Wave Cleared = +20\\
+All Waves Cleared = +200\\
+Base Destroyed = -50\\
+Invalid or No Action = -1
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=0.5\linewidth]{figures/mdpspecs_screenshots.png}
+  \caption{state action diagram}
+  \label{fig:mdp_state_action}
+\end{figure}
 
-% The formatting instructions contained in these style files are summarized in
-% Sections \ref{gen_inst}, \ref{headings}, and \ref{others} below.
 
 \section{Approaches}
-\label{gen_inst}
-
 \subsection{Prior work}
 
 Previous work by Maria Manolaki also focused on implementing reinforcement learning (RL) for tower defence for learning an optimal policy \cite{manolaki_td_rl}. However, in their implementation, the enemy was the artificial intelligence agent. The agent's goal was to learn an optimal policy to win the game. This involves the enemy avoiding towers and finding the best path to the base. They implemented the A2C algorithm to provide the enemy with intelligence needed to reach the base. Our implementation differs, focusing only on the player agent. It would be interesting to build on this by deploying a multi-agent interaction between a player and an enemy agent and  analyze their interaction.
@@ -164,6 +175,20 @@ In this reward structure, the estimated maximum value you could reach when inter
 We also noticed the training time for A2C was considerably longer compared to Q-learning and SARSA. 
 
 Overall, the A2C algorithm performed well with this environment, likely due to the critic's ability to make less accurate state-value estimates without drastically impacting the actor policy.
+
+\subsubsection{DQN}
+For the DQN experiments, the agent observes the flattened metadata state vector and we apply per-feature min–max normalization before feeding it to the network. The Q-function is represented by a three-layer feed-forward network with two 128-unit hidden layers and ReLU activations, outputting one Q-value per discrete action. To stabilize learning, we follow the standard DQN design. We use an experience replay memory that stores up to 50,000 transitions, mini-batches of size 64 are sampled for updates, and a separate target network is updated every 10 episodes. Exploration is $\epsilon$-greedy with $\epsilon$ decaying exponentially from 1.0 to a minimum of 0.05 over episodes.\\
+
+\begin{figure} [!htbp]
+  \centering
+  \includegraphics[width=0.5\linewidth]{figures/dqn_3r_2500ep_3learn}
+  \caption{DQN with 3 different performance rates}
+  \label{fig:dqn_performance}
+\end{figure}
+
+Figure X summarizes the learning curves for the three learning rates (0.001, 0.0005, 0.0001). Each configuration was trained for 2,500 episodes and evaluated every 50 episodes for 1 run. All three learning rates show an overall upward trend, indicating that DQN is able to exploit experience replay and the target network to improve performance over time rather than diverging, unlike the earlier Q-learning baseline. The largest learning rate (0.001) achieves the fastest performance gains and reaches the highest final average return, although the curve being more volatile than the others since the update step is larger. The intermediate rate (0.0005) learns more slowly but exhibits a smoother curve with fewer sharp drops, while the smallest rate (0.0001) produces the most stable but also the lowest returns, this suggests underfitting and a very slow propagation of reward information due to the sparse and delayed rewards.\\\\
+Overall, these results suggest that DQN is the most effective algorithm that we tested being significantly more effective than our vanilla Q-learning and SARSA with neural function approximation, which showed little convergence and high instability. However, the DQN curves are still quite volatile, reflecting the difficulty of learning in a high-dimensional, stochastic environment with delayed rewards. The sensitivity to the learning rate visible in the figure indicates that larger step sizes can unlock higher returns but at the cost of higher variance, while smaller step sizes are more stable but may fail to fully exploit the environment within a fixed training budget.
+
 
 
 \section{Conclusion}
