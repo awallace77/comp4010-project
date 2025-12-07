@@ -45,10 +45,10 @@ Actor-critic methods --- mastering reinforcement learning, 2023.
 \newblock URL
   \url{https://gibberblot.github.io/rl-notes/single-agent/actor-critic.html}.
 
-\bibitem[Weng(2018)]{weng_policy_gradient}
-L.~Weng.
-\newblock Policy gradient algorithms, April 2018.
-\newblock URL
-  \url{https://lilianweng.github.io/posts/2018-04-08-policy-gradient/}.
+\bibitem[Sutton and Barto(2018)]{sutton_barto_2018}
+Richard~S. Sutton and Andrew~G. Barto.
+\newblock \emph{Reinforcement Learning: An Introduction}.
+\newblock MIT Press, 2018.
+\newblock URL \url{http://incompleteideas.net/book/RLbook2020.pdf}.
 
 \end{thebibliography}
