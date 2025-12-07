@@ -99,11 +99,15 @@ Exploring RL for tower defense is extremely valuable. Applying RL methods in hig
 
 
 \subsection{MDP specifications}
-To Be added
-
-
-The formatting instructions contained in these style files are summarized in
-Sections \ref{gen_inst}, \ref{headings}, and \ref{others} below.
+The state space is represented as a 3d box the shape of [ 10, 10, [8] ], 10 and 10 representing the x, y coordinate of a cell on the grid and the third dimension being an array containing:\\\\Tower ID , Tower Level , Number Of Enemies, Average Health Of Enemies, Enemy With The Highest Health Value, If The Cell Has An Enemy, If The Cell Is The Base, and The health of the base.\\\\The state space would be the addition of all the max possible values of the third dimension to the power of cell on the grid:\\\\\[(3+6+11+51+51+2+2+41)^{100} = 167^{100}\] \\\\ The action space is of size 97, the agent can either do nothing or place one of two types of turrets on the 49 viable positions on the grid. The agent has the choice of placing down a single target tower, an area of effect tower or do nothing. In this project the agent acts in phases, there’s a build phase and a defense phase. In the build phase the agent is allowed to place one of two types of towers or be inactive. While in the defense phase, the agent is allowed to place towers so long as he has the budget to, but the waves of enemies will begin spawning.\\\\The reward structure is the following:\\\\
+Enemy Defeated = +10\\
+Enemy Reaches Base  = -15\\
+Enemy Damaged = +1\\
+Tower Level’s up = +5\\
+Wave Cleared = +20\\
+All Waves Cleared = +200\\
+Base Destroyed = -50\\
+Invalid or No Action = -1
 
 
 \section{Approaches}
