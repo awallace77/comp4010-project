@@ -208,15 +208,19 @@ QR-DQN outperformed both Q-learning and SARSA, but it did not surpass standard D
 
 
 \section{Conclusion}
-In conclusion, we explored various reinforcement learning (RL) methods to learn an optimal policy for tower defense. This included Q-learning, SARSA, Advantage Actor-Critic (A2C), Proximal Policy Optimization (PPO), and Deep Q-Networks (DQN). 
+In conclusion, we explored various reinforcement learning (RL) methods to learn an optimal policy for tower defense. This included Q-learning, SARSA, Advantage Actor-Critic (A2C), Proximal Policy Optimization (PPO), Deep Q-Networks (DQN), and Quantile Regression DQN.
 
-We observed high variability and poor performance for the Q-learning and SARSA algorithms. This is due the difficulty of bootstrapping in high dimensional state spaces with sparse and delayed rewards. Policy gradient-based algorithms such as A2C and PPO yielded better results. This is due to their ability to learn the policy directly, instead of relying on bootstrapped Q-values. Also, these algorithms are designed for high-dimensional continuous state spaces while maintaining sufficient action space coverage \cite{weng_policy_gradient}. However, they still struggle with the sparse reward system and require many episodes to converge, making training computationally expensive.
+We observed high variability and poor performance for the Q-learning and SARSA algorithms. This is due to the difficulty of bootstrapping in high dimensional state spaces with sparse and delayed rewards. The deadly triad of function approximation, bootstrapping, and off-policy learning proved particularly problematic for Q-learning, while SARSA struggled with non-stationary environment dynamics as wave difficulty increased.
 
-// TODO talk more about PPO and DQN?  
+Policy gradient-based algorithms such as A2C and PPO yielded better results. This is due to their ability to learn the policy directly, instead of relying on bootstrapped Q-values. A2C achieved returns close to the theoretical maximum of 3,700, demonstrating that actor-critic methods are well-suited for this environment. PPO showed sensitivity to the clip range hyperparameter, with smaller clip values learning faster but less stably.
 
-In future work, more analysis and design of a strong feature extractor should be considered. This would help reduce the high dimensional state complexity and improve algorithm performance. Next, other algorithms such as Double Deep Q-Networks (DDQN) and Asynchronous Advantage Actor-Critic (A3C) should be considered to stabilize learning and handle the high dimensional state space.
+DQN emerged as our best performing algorithm, achieving returns in the 10,000-40,000 range. The combination of experience replay and target networks effectively addressed the instability seen in vanilla Q-learning. Interestingly, QR-DQN did not improve upon standard DQN despite its distributional approach, suggesting that modelling return uncertainty provides limited benefit in this environment and adds unnecessary computational overhead.
 
-Overall, we gained valuable insights into the application of RL in a tower defence environment. 
+A key insight from this project is the importance of matching algorithm complexity to the problem. Simpler methods with appropriate stabilization techniques (e.g., DQN with replay buffers) outperformed more sophisticated distributional approaches. Additionally, the automatic tower evolution mechanic created a challenging credit assignment problem, where early placement decisions have delayed effects on tower strength.
+
+In future work, more analysis and design of a strong feature extractor should be considered. This would help reduce the high dimensional state complexity and improve algorithm performance. Reward shaping to provide denser feedback signals could also accelerate learning. Next, other algorithms should be considered. To address overestimation, an algorithm such as Double Deep Q-Networks may be considered. For more parallelized training, Asynchronous Advantage Actor-Critic can be considered. In terms of training, curriculum learning may help agents learn fundamental strategies before facing the full complexity of the environment (i.e.\ starting with fewer waves and gradually increasing difficulty).
+
+Overall, we gained valuable insights into the application of RL in a tower defence environment. This environment proved to be a challenging testbed for RL due to a combination of strategic planning, resource management, and stochasticity. In particular, we learned about the tradeoffs between an algorithm's complexity, stability, and efficiency.
 
 \section{Citations, figures, tables, references}
 \label{others}
