@@ -89,7 +89,7 @@ The objective of this project is to train an agent using reinforcement learning 
 
 \subsection{Importance of the problem}
 
-Exploring RL for tower defence is extremely valuable. Applying RL methods in high-dimensional state and action spaces, challenging reward structures, and its application in balancing short and long-term investment, giving us valuable insights into the capabilities of RL in highly transferrable domains.
+Exploring RL for tower defence is extremely valuable. Applying RL methods to high-dimensional state and action spaces, challenging reward structures, and balancing short- and long-term investment provides valuable insights into RL's capabilities in highly transferable domains.
 
 \subsection{MDP specifications}
 To Be added
@@ -102,27 +102,30 @@ To Be added
 
 \subsection{Prior work}
 
-Previous work by Maria Manolaki also focused on implementing reinforcement learning (RL) for tower defence for learning an optimal policy \cite{manolaki_td_rl}. However, in their implementation, the enemy was the artificial intelligence agent. The agent's goal was to learn an optimal policy to win the game. This involves the enemy avoiding towers and finding the best path to the base. They implemented the A2C algorithm to provide the enemy with intelligence needed to reach the base. Our implementation differs, focusing only on the player agent. It would be interesting to build on this by deploying a multi-agent interaction between a player and an enemy agent and  analyze their interaction.
+Previous work by Maria Manolaki also focused on implementing reinforcement learning (RL) for tower defence for learning an optimal policy \cite{manolaki_td_rl}. However, in their implementation, the enemy was the artificial intelligence agent. The agent's goal was to learn an optimal policy to win the game. This involves the enemy avoiding towers and finding the best path to the base. They implemented the A2C algorithm to provide the enemy with the intelligence needed to reach the base. Our implementation differs, focusing only on the player agent. It would be interesting to build on this by deploying a multi-agent interaction between a player and an enemy agent and analysing their interaction.
 
 Another application of RL for tower defence was implemented by Timothée Blondiaux et al. for Plants vs. Zombies, a popular tower defence game consisting of plants as towers and zombies as enemies \cite{blondiaux_pvz}. They implemented a wide array of RL methods, including A2C, Monte-Carlo policy gradient, Deep Q-Networks (DQN), and Double Deep Q-Networks (DDQN). They observed good results with the DDQN algorithm, beating difficult levels 65\% of the time \cite{blondiaux_pvz}.
 
 A more general approach was taken in a study by Abhinav Wasukar and Sumitra Jakhete, looking at the application of the DQN and PPO algorithms in various game environments, including tower defence. They found that PPO significantly outperformed DQN, achieving a much higher average return. However, DQN showed lower variance and was more consistent  across runs \cite{wasukar2024_dqn_ppo}. 
 
-One interesting (and indirect) study done by Baylor Wetzel, studied Transfer Learning in a tower defence environment. Transfer learning is the process of using knowledge gained while solving one problem to solve a new, previously unencountered problem \cite{wetzel2011_transfer}. In this study, they collected data from human reported solutions to a tower defence game. They used these solutions to create computational agents to model human strategies. Then, a domain expert was asked to tell apart the human-made tower placements from the computer-generated ones - they could not tell the difference \cite{wetzel2011_transfer}. This approach focuses on modelling human behaviour rather than achieving optimal performance.
+One interesting (and indirect) study done by Baylor Wetzel studied Transfer Learning in a tower defence environment. Transfer learning is the process of using knowledge gained while solving one problem to solve a new, previously unencountered problem \cite{wetzel2011_transfer}. In this study, they collected data from human-reported solutions to a tower defence game. They used these solutions to create computational agents to model human strategies. Then, a domain expert was asked to tell apart the human-made tower placements from the computer-generated ones - they could not tell the difference \cite{wetzel2011_transfer}. This approach focuses on modelling human behaviour rather than achieving optimal performance.
 
-A similar study done by Augusto Dias et al., utilized game metadata as inputs to a Deep Q-Learning agent rather than video frames or pixel information \cite{dias2022_td}. They found that no other work reported developing autonomous agents to play tower defence games (2020) and that using metadata as input reduced computational complexity \cite{dias2022_td}. This is similar to our implementation where state is represented by the game metadata.
+A similar study by Augusto Dias et al. utilised game metadata as inputs to a Deep Q-Learning agent rather than video frames or pixel information \cite{dias2022_td}. They found that no other work reported developing autonomous agents to play tower defence games (2020) and that using metadata as input reduced computational complexity \cite{dias2022_td}. This is similar to our implementation, where the state is represented by the game metadata.
 
 \subsection{Our approaches}
 
-Our project differs from these works through the automatic tower level-up mechanism and unique approach to action and state space reduction. In our environment, towers level up automatically based on the number of enemies they kill without explicit user input. This adds a layer of complexity for learning optimal solutions. That is, balancing strategic placement for tower level-ups and successful long term  defence.
+Our project differs from these works through an automatic tower level-up mechanism and a unique approach to action and state space reduction. In our environment, towers level up automatically based on the number of enemies they kill without explicit user input. This adds a layer of complexity for learning optimal solutions. That is, balancing strategic placement for tower level-ups and successful long-term defence.
 
-The tower defence environment has a high dimensional and continuous state, with a large discrete action space. This makes tabular based learning methods infeasible. Conventional methods such as Tabular Q-Learning or SARSA cannot store Q-tables for an infinite space. So, we first chose SARSA with function approximation to handle the high dimensional state space. Also, being an on-policy algorithm, SARSA allows for sufficient coverage of the large action space. Note that linear function approximation struggles with the large state space, so a Q-network was used for the function approximation. Next, we looked at the Advantage Actor Critic Algorithm (A2C) which works with continuous state spaces and discrete action spaces \cite{masteringrl_actor_critic}. Actor-Critic are policy gradient algorithms that optimize the policy directly through learned parameters. This allows us to tune the policy to reduce variance seen in methods such as SARSA (e.g., reducing actor step size).
+The tower defence environment has a high-dimensional and continuous state, with a large discrete action space. This makes tabular-based learning methods infeasible. Conventional methods, such as Tabular Q-Learning or SARSA, cannot store Q-tables for an infinite space. So, we first chose SARSA with function approximation to handle the high-dimensional state space. Also, SARSA is an on-policy algorithm that provides sufficient coverage of the large action space. Note that linear function approximation struggles with the large state space, so a Q-network was used. Next, we looked at the Advantage Actor-Critic Algorithm (A2C), which handles continuous state spaces and discrete action spaces \cite{masteringrl_actor_critic}. Actor-Critic algorithms utilise policy gradient to update the policy directly with learned parameters. This allows us to tune the policy to reduce variance, demonstrated by methods such as SARSA (e.g., reducing actor step size).
 
 However, SARSA and A2C are on-policy algorithms, making  convergence to a stable optimal policy difficult. We then explored Deep Q-Learning with Q-Networks to avoid the on-policy nature of SARSA, and utilized a replay buffer to reduce variance. 
+
+// TODO talk PPO.
+
 \section{Empirical studies}
 
 \subsection{Q-learning}
-We implemented Q-learning using a simple 3 layer Q-network as our function approximator and a target network to stabilize updates. The Q-network allowed us to learn in a high dimensional state and action space where tabular Q-learning would be infeasible. The space complexity for tabular learning would be $O(|S| x |A|)$. Specifically, $O(11^{v(n)})$, where $v(n) = 49$ valid squares for $n= 10$ ($10 \times 10$ grid).
+We implemented Q-learning using a simple 3-layer Q-network as our function approximator and a target network to stabilize updates. The Q-network allowed us to learn in a high dimensional state and action space where tabular Q-learning would be infeasible. The space complexity for tabular learning would be $O(|S| x |A|)$. Specifically, $O(11^{v(n)})$, where $v(n) = 49$ valid squares for $n= 10$ ($10 \times 10$ grid).
 
 The target network was implemented to reduce variance and stabilize learning across episodes. However, this approach did not yield good results. As seen in Figure \ref{fig:q_learning_performance}, no convergence and instability in learning. 
 
@@ -133,7 +136,7 @@ The target network was implemented to reduce variance and stabilize learning acr
   \label{fig:q_learning_performance}
 \end{figure}
 
-This is due to the deadly triad combination of function approximation, bootstrapping, and off-policy learning. Even when attempting to stabilize bootstrapping updates, there was no consistency in learning. One interesting observation was that higher learning rates yielded more consistent, but low returns. On the other hand, lower learning rates yielded high variance and less consistency. With a lower learning rate, the immediate rewards are slower to propagate through the Q-network, so stochasticity in the environment dominates. This demonstrates Q-learning's sensitivity to hyper-parameters and overall instability.
+This is due to the deadly triad combination of function approximation, bootstrapping, and off-policy learning. Even when attempting to stabilize bootstrapping updates, there was no consistency in learning. One interesting observation was that higher learning rates yielded more consistent, but lower returns. On the other hand, lower learning rates showed high variance and less consistency. With a lower learning rate, the immediate rewards propagate slowly through the Q-network, so stochasticity in the environment dominates. This demonstrates Q-learning's sensitivity to hyperparameters and overall instability.
 
 \subsubsection{SARSA}
 After implementing the SARSA algorithm with Q-network function approximation, we evaluated and observed the following results in Figure~\ref{fig:sarsa-performance}. 
@@ -145,12 +148,12 @@ After implementing the SARSA algorithm with Q-network function approximation, we
   \label{fig:sarsa-performance}
 \end{figure}
 
-First, the environment has a delayed and sparse reward structure, causing SARSA's on-policy TD(0) update to struggle with the delayed reward signals. Also, with increasingly difficult waves, an action taken in one state may signal a vastly different reward in another state. For example, in an early wave when enemy health is lower, placing a tower in a cell that results in the elimination of the enemy will return a large positive return. However, in later waves when enemy health is high, placing the same tower in the same cell may not yield the same result. This inhibits SARSA learning, since it expects environment dynamics to be stationary to guarantee convergence. Furthermore, SARSA is an on-policy algorithm. It depends directly on actions taken. In early exploration, actions are random which leads to poor estimates, noisy updates, and high variance. 
+First, the environment has a delayed and sparse reward structure, causing SARSA's on-policy TD(0) update to struggle with delayed reward signals. Also, as wave difficulty increases, an action taken in one state may signal a vastly different reward in another state. For example, in an early wave when enemy health is lower, placing a tower in a cell that results in the elimination of the enemy will return a large positive return. However, in later waves, when enemy health is high, placing the same tower in the same cell may not yield the same result. This inhibits SARSA learning, since it expects environment dynamics to be stationary to guarantee convergence. Furthermore, SARSA is an on-policy algorithm. It depends directly on actions taken. In early exploration, actions are random, which leads to poor estimates, noisy updates, and high variance. 
 
 Due to the on-policy nature of SARSA, we do see more coverage of the action space compared to off-policy methods such as Q-learning. Overall, SARSA performed poorly in learning an optimal policy. Reducing the state dimensionality and ensuring stationary environment dynamics are required for better performance. Other methods should be considered before implementing SARSA in a tower defense environment.
 
 \subsubsection{Advantage Actor-Critic (A2C)}
-After running the A2C algorithm with scaled-up rewards, it was observed in Figure~\ref{fig:a2c-performance} to have rough convergence to an optimal policy. 
+After running the A2C algorithm, it was observed in Figure~\ref{fig:a2c-performance} to have rough convergence to an optimal policy. 
 
 \begin{figure}[htbp]
   \centering
@@ -159,21 +162,32 @@ After running the A2C algorithm with scaled-up rewards, it was observed in Figur
   \label{fig:a2c-performance}
 \end{figure}
 
-In this reward structure, the estimated maximum value you could reach when interacting with the environment was 3700. In the line chart, in Figure **figure no. here** the algorithm performed well in achieving close to maximum rewards values across runs. However, we do see high variance regardless of the critic's step size. This is due to the on-policy nature of the algorithm, where updates to the actor policy impact the policy for all other actions. Another reason is that A2C uses a SoftMax policy. The action is sampled from a distribution, so there's always a chance that policy will deviate from the optimal action, creating variance in the average evaluated return.
+In this reward structure, the estimated maximum value you could reach when interacting with the environment was 3700. In Figure~\ref{fig:a2c-performance}, the algorithm performed well in achieving close to maximum reward values across runs. However, we do see high variance regardless of the critic's step size. This is due to the on-policy nature of the algorithm, where updates to the actor policy impact the policy for all other actions. Another reason is that A2C uses a SoftMax policy. The action is sampled from a distribution, so there's always a chance that the policy will deviate from the optimal action, creating variance in the average evaluated return.
 
 We also noticed the training time for A2C was considerably longer compared to Q-learning and SARSA. 
 
 Overall, the A2C algorithm performed well with this environment, likely due to the critic's ability to make less accurate state-value estimates without drastically impacting the actor policy.
 
+\subsubsection{PPO}
+Proximal Policy Optimization is a type of policy gradient method, particularly helpful for complicated or large environments. Our tower defence environment has a very large discrete action space so this algorithm is suitable as it allows for efficient state exploration through stochastic sampling rather than \texttt{argmax} selection over Q-values \cite{sutton_barto_2018}. We implemented this algorithm using the Stable Baseline library. In our experiments we tested two key parameters, learning rates and clip ranges. In the first experiment we tested 3 different clip ranges with a fixed learning rate of 0.0003. Our experiment was set up to run for 1000 episodes, evaluating every 15th episode, and a single run per clip. From this experiment we observed in Figure~\ref{fig:ppo-performance} how different clip ranges led to different learnings. 
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{figures/ppo_clip.png}
+  \caption{A2C performance with different learning rates.}
+  \label{fig:ppo-performance}
+\end{figure}
+
+With the smallest clip range of 0.1, we can see that it had the earliest return of about 7,200 with another huge peak at around 750th episode. Although it had a long period of near 0 return between the two spikes it achieved the highest single evaluation return. The next clip range of 0.2 showed a slower learning compared to 0.1. With this clip range we see that it had low peaks through learning episodes but had a major peak at around mid max episodes. Showing an overall more learning consistency than 0.1 clip. Lastly, clip 0.3 showed very slow learning performance in the beginning of the episodes as it hovered between 0 to less than 1000 return for the initial episodes. It has a major return peak near 800 episodes and showing a maintaining return between 1,500-3,000. This shows that 0.3 had very slow learning in the beginning but there is visible improvement in learning and high returns as there are more episodes. Overall, smaller clips show a faster initial return but less stable, and higher clips learn slowly but show improvement with more learning.
 
 \section{Conclusion}
 In conclusion, we explored various reinforcement learning (RL) methods to learn an optimal policy for tower defense. This included Q-learning, SARSA, Advantage Actor-Critic (A2C), Proximal Policy Optimization (PPO), and Deep Q-Networks (DQN). 
 
-We observed high variability and poor performance for the Q-learning and SARSA algorithms. This is due the difficulty of bootstrapping in high dimensional state spaces with sparse and delayed rewards. Policy gradient-based algorithms such as A2C and PPO yielded better results. This is due to their ability to learn the policy directly, instead of relying on bootstrapped Q-values. Also, these algorithms are designed for high-dimensional continuous state spaces while maintaining sufficient action space coverage \cite{weng_policy_gradient}. However, they still struggle with the sparse reward system and require many episodes to converge, making training computationally expensive.
+We observed high variability and poor performance for the Q-learning and SARSA algorithms. This is due to the difficulty of bootstrapping in high-dimensional state spaces with sparse and delayed rewards. Policy gradient-based algorithms such as A2C and PPO yielded better results. This is due to their ability to learn the policy directly, instead of relying on bootstrapped Q-values. Also, these algorithms are designed for high-dimensional continuous state spaces while maintaining sufficient action space coverage \cite{weng_policy_gradient}. However, they still struggle with the sparse reward system and require many episodes to converge, making training computationally expensive.
 
 // TODO talk more about PPO and DQN?  
 
-In future work, more analysis and design of a strong feature extractor should be considered. This would help reduce the high dimensional state complexity and improve algorithm performance. Next, other algorithms such as Double Deep Q-Networks (DDQN) and Asynchronous Advantage Actor-Critic (A3C) should be considered to stabilize learning and handle the high dimensional state space.
+In future work, more analysis and design of a strong feature extractor should be considered. This would help reduce the high-dimensional state complexity and improve algorithm performance. Next, other algorithms such as Double Deep Q-Networks (DDQN) and Asynchronous Advantage Actor-Critic (A3C) should be considered to stabilise learning and handle the high-dimensional state space.
 
 Overall, we gained valuable insights into the application of RL in a tower defence environment. 
 
