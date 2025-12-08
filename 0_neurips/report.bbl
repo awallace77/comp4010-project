@@ -1,4 +1,4 @@
-\begin{thebibliography}{7}
+\begin{thebibliography}{8}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -50,5 +50,12 @@ Richard~S. Sutton and Andrew~G. Barto.
 \newblock \emph{Reinforcement Learning: An Introduction}.
 \newblock MIT Press, 2018.
 \newblock URL \url{http://incompleteideas.net/book/RLbook2020.pdf}.
+
+\bibitem[Dabney et~al.(2018)Dabney, Rowland, Bellemare, and
+  Munos]{dabney2018qrdqn}
+Will Dabney, Mark Rowland, Marc~G Bellemare, and R{\'e}mi Munos.
+\newblock Distributional reinforcement learning with quantile regression.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial
+  Intelligence}, volume~32, 2018.
 
 \end{thebibliography}
