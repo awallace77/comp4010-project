@@ -65,13 +65,13 @@
 
 \subsection{Project focus}
 
-Tower defence is a strategy game where the goal is to place defensive structures to obstruct and defeat waves of enemies from reaching a goal. This is done by placing and upgrading towers along the attacker's path. The towers are stationary objects that the agent places to attack enemies. These towers have a cost to create and upgrade, meaning the agent must gather resources to do so. In traditional tower defence games, the player starts with a set number of resources and can obtain more after successfully defending from a wave or defeating enemies. The defensive tower upgrades can vary in range and damage.
+Tower defence is a strategy game where the goal is to place defensive structures to obstruct and defeat waves of enemies from reaching a goal. This is done by placing and upgrading towers along the attacker's path. The towers are stationary objects that the agent places to attack enemies. These towers have a cost to create, meaning the agent must gather resources to do so. In traditional tower defence games, the player starts with a set number of resources and can obtain more after successfully defending from a wave or defeating enemies. The defensive towers can vary in range and damage.
 
 The objective of this project is to train an agent using reinforcement learning (RL) methods to learn an optimal policy for tower placement that maximizes survival and minimizes damage taken from enemies. Unlike traditional tower defence games with manual upgrades, our environment features towers that automatically evolve and strengthen based on the number of enemies they eliminate, creating a feedback loop between decisions and long-term strategy when it comes to positioning.
 
 \subsection{Importance of the problem}
 
-Exploring RL for tower defence is extremely valuable. Applying RL methods to high-dimensional state and action spaces, challenging reward structures, and balancing short- and long-term investment provides valuable insights into RL's capabilities in highly transferable domains.
+Exploring RL for tower defence is extremely valuable. Applying RL methods to high-dimensional state and action spaces, challenging reward structures, and balancing short and long-term investment provides valuable insights into RL's capabilities in highly transferable domains.
 
 \subsection{MDP specifications}
 The state space is represented as a 3d box the shape of [ 10, 10, [8] ], 10 and 10 representing the x, y coordinate of a cell on the grid and the third dimension being an array containing:
