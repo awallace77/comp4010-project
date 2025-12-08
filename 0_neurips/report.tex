@@ -199,7 +199,7 @@ The first learning rate of 0.001 showed high early returns but unsustained early
 
 
 \subsubsection{DQN}
-For the DQN experiments, the agent observes the flattened metadata state vector [5] and we apply per-feature min-max normalization before feeding it to the network. The Q-function is represented by a three-layer feed-forward network with two 128-unit hidden layers and ReLU activations, outputting one Q-value per discrete action. To stabilize learning, we follow the standard DQN design. We use an experience replay memory that stores up to 50,000 transitions, mini-batches of size 64 are sampled for updates, and a separate target network is updated every 10 episodes. Exploration is $\epsilon$-greedy with $\epsilon$ decaying exponentially from 1.0 to a minimum of 0.05 over episodes.
+For the DQN experiments, the agent observes the flattened metadata state vector \cite{dias2022_td} and we apply per-feature min-max normalization before feeding it to the network. The Q-function is represented by a three-layer feed-forward network with two 128-unit hidden layers and ReLU activations, outputting one Q-value per discrete action. To stabilize learning, we follow the standard DQN design. We use an experience replay memory that stores up to 50,000 transitions, mini-batches of size 64 are sampled for updates, and a separate target network is updated every 10 episodes. Exploration is $\epsilon$-greedy with $\epsilon$ decaying exponentially from 1.0 to a minimum of 0.05 over episodes.
 
 \begin{figure} [!htbp]
   \centering
