@@ -132,9 +132,9 @@ We implemented Q-learning using a simple 3-layer Q-network as our function appro
 
 The target network was implemented to reduce variance and stabilize learning across episodes. However, this approach did not yield good results. As seen in Figure~\ref{fig:q_learning_performance}, no convergence and instability in learning. 
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{figures/qlearning_10runs_10000episodes.png}
+  \includegraphics[width=0.5\linewidth]{figures/qlearning_10runs_10000episodes.png}
   \caption{Q-learning performance with different learning rates.}
   \label{fig:q_learning_performance}
 \end{figure}
@@ -144,9 +144,9 @@ This is due to the deadly triad combination of function approximation, bootstrap
 \subsubsection{SARSA}
 After implementing the SARSA algorithm with Q-network function approximation, we evaluated and observed the following results in Figure~\ref{fig:sarsa-performance}. 
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{figures/sarsa\_10runs\_10000episodes.png}
+  \includegraphics[width=0.5\linewidth]{figures/sarsa\_10runs\_10000episodes.png}
   \caption{SARSA performance with different learning rates.}
   \label{fig:sarsa-performance}
 \end{figure}
@@ -158,9 +158,9 @@ Due to the on-policy nature of SARSA, we do see more coverage of the action spac
 \subsubsection{Advantage Actor-Critic (A2C)}
 After running the A2C algorithm, it was observed in Figure~\ref{fig:a2c-performance} to have rough convergence to an optimal policy. 
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
-  \includegraphics[width=0.7\linewidth]{figures/a2c\_learn\_1runs\_10000episodes.png}
+  \includegraphics[width=0.6\linewidth]{figures/a2c\_learn\_1runs\_10000episodes.png}
   \caption{A2C performance with different learning rates.}
   \label{fig:a2c-performance}
 \end{figure}
@@ -177,7 +177,7 @@ Proximal Policy Optimization is a type of policy gradient method, particularly u
 
 In our experiments, we tested two key parameters, learning rates and clip ranges. In the first experiment we tested 3 different clip ranges with a fixed learning rate of 0.0003. The experiment was set up to run for 1,000 episodes, with evaluation performed every 15 episodes, and a single run per configuration.
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.7\linewidth]{figures/ppo_learn_clip1.png}
   \caption{PPO performance with 3 different clip ranges.}
@@ -188,7 +188,7 @@ At the first clip range of 0.1, the agent achieved an early return of approximat
 
 In the second experiment, we had a fixed clip range at $\epsilon = 0.2$ and tested with 3 different learning rates. 
 
-\begin{figure}[htbp]
+\begin{figure}[!htbp]
   \centering
   \includegraphics[width=0.7\linewidth]{figures/ppo_learn_e300.png}
   \caption{PPO performance with a fixed clip range.}
