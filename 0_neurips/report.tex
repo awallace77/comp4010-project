@@ -52,11 +52,9 @@
 
 \maketitle
 
-\author{Derrick Zhang - 101232374}
-
 \begin{abstract}
 
-  We investigate and evaluate the effectiveness of various reinforcement learning (RL) algorithms in a custom high-dimensional tower defence environment, featuring a large discrete action space, stochastic dynamics, sparse rewards, and an automatic tower level-up mechanism. Algorithms such as Q-learning with Q-target networks, SARSA with Q-network approximation, Advantage Actor-Critic (A2C), Proximal Policy Optimization (PPO), and Deep Q-Networks (DQN) were evaluated in their ability to learn an optimal policy. Our results show that tabular-inspired methods such as Q-learning and SARSA struggle due to the environment's non-stationary dynamics, yielding high variance and poor convergence. Policy gradient-based algorithms such as A2C and PPO achieved better results, but exhibited instability and sensitivity to hyperparameters. Overall, DQN was the best performing algorithm, combining experience replay and target networks to achieve high returns.
+We investigate and evaluate the effectiveness of various reinforcement learning (RL) algorithms in a custom high-dimensional tower defence environment, featuring a large discrete action space, stochastic dynamics, sparse rewards, and an automatic tower level-up mechanism. Algorithms such as Q-learning with Q-target networks, SARSA with Q-network approximation, Advantage Actor-Critic (A2C), Proximal Policy Optimization (PPO), Deep Q-Networks (DQN), and Quantile Regression DQN (QR-DQN) were evaluated in their ability to learn an optimal policy. Our results show that tabular-inspired methods such as Q-learning and SARSA struggle due to the environment's non-stationary dynamics, yielding high variance and poor convergence. Policy gradient-based algorithms such as A2C and PPO achieved better results, but exhibited instability and sensitivity to hyperparameters. QR-DQN, a distributional approach meant to stabilize traditional DQN learning, showed little performance improvement on traditional DQN - suggesting that modelling return uncertainty is provides limited benefit in this environment. Overall, DQN was the best performing algorithm, combining experience replay and target networks to achieve high returns.
 
 \end{abstract}
 
@@ -76,7 +74,7 @@ Exploring RL for tower defence is extremely valuable. Applying RL methods to hig
 \subsection{MDP specifications}
 The state space is represented as a 3d box the shape of [ 10, 10, [8] ], 10 and 10 representing the x, y coordinate of a cell on the grid and the third dimension being an array containing:
 
-Tower ID, tower level, number Of enemies, average health of enemies, enemy with the highest health value, if the cell has an enemy, if the cell is the base, and the health of the base.
+Tower ID, tower level, number of enemies, average health of enemies, enemy with the highest health value, if the cell has an enemy, if the cell is the base, and the health of the base.
 
 The state space would be the addition of all the max possible values of the third dimension to the power of cell on the grid:
 
@@ -94,15 +92,16 @@ Actions taken in this space follow a Markov decision process (MDP) as seen in Fi
 The action space is of size 97. The agent can either do nothing or place one of two types of turrets on the 49 viable positions on the grid. The agent has the choice of placing down a single target tower, an area of effect tower or do nothing. In this project the agent acts in phases, there's a build phase and a defence phase. In the build phase, the agent is allowed to place one of two types of towers or be inactive. While in the defence phase, the agent is allowed to place towers so long as he has the budget to, but the waves of enemies will begin spawning.
 
 The reward structure is the following:
-
-Enemy Defeated = +10\\
-Enemy Reaches Base = -15\\
-Enemy Damaged = +1\\
-Tower Level up = +5\\
-Wave Cleared = +20\\
-All Waves Cleared = +200\\
-Base Destroyed = -50\\
-Invalid or No Action = -1
+\begin{itemize}
+  \item Enemy Defeated = +10
+  \item Enemy Reaches Base = -15
+  \item Enemy Damaged = +1
+  \item Tower Level Up = +5
+  \item Wave Cleared = +20
+  \item All Waves Cleared = +200
+  \item Base Destroyed = -50
+  \item Invalid or No Action = -1
+\end{itemize}
 
 \section{Approaches}
 \subsection{Prior work}
@@ -121,7 +120,7 @@ A similar study by Augusto Dias et al. utilised game metadata as inputs to a Dee
 
 Our project differs from these works through an automatic tower level-up mechanism and a unique approach to action and state space reduction. In our environment, towers level up automatically based on the number of enemies they kill without explicit user input. This adds a layer of complexity for learning optimal solutions. That is, balancing strategic placement for tower level-ups and successful long-term defence.
 
-The tower defence environment has a high-dimensional and continuous state, with a large discrete action space. This makes tabular-based learning methods infeasible. Conventional methods, such as Tabular Q-Learning or SARSA, cannot store Q-tables for an infinite space. So, we first chose SARSA with function approximation to handle the high-dimensional state space. Also, SARSA is an on-policy algorithm that provides sufficient coverage of the large action space. Note that linear function approximation struggles with the large state space, so a Q-network was used. Next, we looked at the Advantage Actor-Critic Algorithm (A2C), which handles continuous state spaces and discrete action spaces \cite{masteringrl_actor_critic}. Actor-Critic algorithms utilise policy gradient to update the policy directly with learned parameters. This allows us to tune the policy to reduce variance, demonstrated by methods such as SARSA (e.g., reducing actor step size).
+The tower defence environment has a high-dimensional and continuous state, with a large discrete action space. This makes tabular-based learning methods infeasible. Conventional methods, such as Tabular Q-Learning or SARSA, cannot store Q-tables for an infinite space. So, we first chose SARSA with function approximation to handle the high-dimensional state space. Also, SARSA is an on-policy algorithm that provides sufficient coverage of the large action space. Note that linear function approximation struggles with the large state space, so a Q-network was used. Next, we looked at the Advantage Actor-Critic Algorithm (A2C), which handles continuous state spaces and discrete action spaces \cite{masteringrl_actor_critic}. Actor-Critic algorithms utilise policy gradient to update the policy directly with learned parameters. This allows us to tune the policy to reduce variance seen in methods such as SARSA (e.g., reducing actor step size).
 
 However, SARSA and A2C are on-policy algorithms, making convergence to a stable optimal policy difficult. We then explored Deep Q-Learning with Q-Networks to avoid the on-policy nature of SARSA, and utilized a replay buffer to reduce variance. 
 
@@ -141,7 +140,7 @@ The target network was implemented to reduce variance and stabilize learning acr
 
 This is due to the deadly triad combination of function approximation, bootstrapping, and off-policy learning. Even when attempting to stabilize bootstrapping updates, there was no consistency in learning. One interesting observation was that higher learning rates yielded more consistent, but lower returns. On the other hand, lower learning rates showed high variance and less consistency. With a lower learning rate, the immediate rewards propagate slowly through the Q-network, so stochasticity in the environment dominates. This demonstrates Q-learning's sensitivity to hyperparameters and overall instability.
 
-\subsubsection{SARSA}
+\subsection{SARSA}
 After implementing the SARSA algorithm with Q-network function approximation, we evaluated and observed the following results in Figure~\ref{fig:sarsa-performance}. 
 
 \begin{figure}[!htbp]
@@ -155,7 +154,7 @@ First, the environment has a delayed and sparse reward structure, causing SARSA'
 
 Due to the on-policy nature of SARSA, we do see more coverage of the action space compared to off-policy methods such as Q-learning. Overall, SARSA performed poorly in learning an optimal policy. Reducing the state dimensionality and ensuring stationary environment dynamics are required for better performance. Other methods should be considered before implementing SARSA in a tower defense environment.
 
-\subsubsection{Advantage Actor-Critic (A2C)}
+\subsection{Advantage Actor-Critic (A2C)}
 After running the A2C algorithm, it was observed in Figure~\ref{fig:a2c-performance} to have rough convergence to an optimal policy. 
 
 \begin{figure}[!htbp]
@@ -171,7 +170,7 @@ We also noticed the training time for A2C was considerably longer compared to Q-
 
 Overall, the A2C algorithm performed well with this environment, likely due to the critic's ability to make less accurate state-value estimates without drastically impacting the actor policy.
 
-\subsubsection{Proximal Policy Optimization (PPO)}
+\subsection{Proximal Policy Optimization (PPO)}
 
 Proximal Policy Optimization is a type of policy gradient method, particularly useful for complicated or large environments. Our tower defence environment has a large discrete action space making this algorithm suitable as it allows for efficient state exploration through stochastic sampling rather than argmax selection over Q-values \cite{sutton_barto_2018}. We implemented this algorithm using the Stable Baseline library. 
 
@@ -198,13 +197,13 @@ In the second experiment, we had a fixed clip range at $\epsilon = 0.2$ and test
 The first learning rate of 0.001 showed high early returns but unsustained early in the training, this likely occurred because large policy updates caused the agent to overshoot good tower placement before exploring all action space. The second learning rate of 0.0003 also showed similar sparse and occasional peak returns throughout training, however towards the end of the training we can observe more consistent returns, which can be explained by the sparse rewards of the environment. The last learning rate of 0.00003, demonstrated the largest returns with a peak of 8,000. This likely occurred because small gradient steps allow the policy to not be vulnerable to environmental stochasticity. From both experiments the prolonged near 0 return can be explained by the environment's large state space as well as the sparse rewards making it difficult to have consistent results. 
 
 
-\subsubsection{DQN}
+\subsection{DQN}
 For the DQN experiments, the agent observes the flattened metadata state vector \cite{dias2022_td} and we apply per-feature min-max normalization before feeding it to the network. The Q-function is represented by a three-layer feed-forward network with two 128-unit hidden layers and ReLU activations, outputting one Q-value per discrete action. To stabilize learning, we follow the standard DQN design. We use an experience replay memory that stores up to 50,000 transitions, mini-batches of size 64 are sampled for updates, and a separate target network is updated every 10 episodes. Exploration is $\epsilon$-greedy with $\epsilon$ decaying exponentially from 1.0 to a minimum of 0.05 over episodes.
 
 \begin{figure} [!htbp]
   \centering
   \includegraphics[width=0.5\linewidth]{figures/dqn_3r_2500ep_3learn}
-  \caption{DQN with 3 different performance rates}
+  \caption{DQN with 3 different learning rates.}
   \label{fig:dqn_performance}
 \end{figure}
 
@@ -212,8 +211,8 @@ Figure~\ref{fig:dqn_performance} summarizes the learning curves for the three le
 
 Overall, these results suggest that DQN is the most effective algorithm that we tested being significantly more effective than our vanilla Q-learning and SARSA with neural function approximation, which showed little convergence and high instability. However, the DQN curves are still quite volatile, reflecting the difficulty of learning in a high-dimensional, stochastic environment with delayed rewards. The sensitivity to the learning rate visible in Figure~\ref{fig:dqn_performance} indicates that larger step sizes can unlock higher returns but at the cost of higher variance, while smaller step sizes are more stable but may fail to fully exploit the environment within a fixed training budget.
 
-\subsubsection{Quantile Regression DQN (QR-DQN)}
-To attempt to address the instability observed in standard DQN, we implemented Quantile Regression DQN (QR-DQN), which is a distributional RL algorithm. Rather than learning a single expected Q-value, QR-DQN models the full distribution of returns using a set of quantiles. This may provide better information about uncertainty in value estimates, which can improve learning stability, especially in a more stochastic environment like this. This algorithm was implemented using the SB3 library with 50 quantiles. 
+\subsection{Quantile Regression DQN (QR-DQN)}
+To attempt to address the instability observed in standard DQN, we implemented Quantile Regression DQN (QR-DQN), which is a distributional RL algorithm \cite{dabney2018qrdqn}. Rather than learning a single expected Q-value, QR-DQN models the full distribution of returns using a set of quantiles. This may provide better information about uncertainty in value estimates, which can improve learning stability, especially in a more stochastic environment like this. This algorithm was implemented using the SB3 library with 50 quantiles. 
 
 Our experiment ran for 100,000 timesteps, evaluating every 5,000 and averaging over 3 runs. Three learning rates were tested: 0.001, 0.0005, and 0.0001. The results are shown in Figure~\ref{fig:qrdqn_performance}.
 
@@ -233,7 +232,7 @@ In conclusion, we explored various reinforcement learning (RL) methods to learn 
 
 We observed high variability and poor performance for the Q-learning and SARSA algorithms. This is due to the difficulty of bootstrapping in high dimensional state spaces with sparse and delayed rewards. The deadly triad of function approximation, bootstrapping, and off-policy learning proved particularly problematic for Q-learning, while SARSA struggled with non-stationary environment dynamics as wave difficulty increased.
 
-Policy gradient-based algorithms such as A2C and PPO yielded better results. This is due to their ability to learn the policy directly, instead of relying on bootstrapped Q-values. A2C achieved returns close to the theoretical maximum of 3,700, demonstrating that actor-critic methods are well-suited for this environment. PPO showed sensitivity to the clip range hyperparameter, with smaller clip values learning faster but less stability.
+Policy gradient-based algorithms such as A2C and PPO yielded better results. This is due to their ability to learn the policy directly, instead of relying on bootstrapped Q-values. A2C achieved returns close to the theoretical maximum of 3,700, demonstrating that actor-critic methods are well-suited for this environment. PPO showed sensitivity to the clip range hyperparameter, with smaller clip values learning faster but less stably.
 
 DQN emerged as our best performing algorithm, achieving returns in the 10,000-40,000 range. The combination of experience replay and target networks effectively addressed the instability seen in vanilla Q-learning. Interestingly, QR-DQN did not improve upon standard DQN despite its distributional approach, suggesting that modelling return uncertainty provides limited benefit in this environment and adds unnecessary computational overhead.
 
