@@ -172,7 +172,31 @@ We also noticed the training time for A2C was considerably longer compared to Q-
 Overall, the A2C algorithm performed well with this environment, likely due to the critic's ability to make less accurate state-value estimates without drastically impacting the actor policy.
 
 \subsubsection{Proximal Policy Optimization (PPO)}
-// TODO 
+
+Proximal Policy Optimization is a type of policy gradient method, particularly useful for complicated or large environments. Our tower defence environment has a large discrete action space making this algorithm suitable as it allows for efficient state exploration through stochastic sampling rather than argmax selection over Q-values \cite{sutton_barto_2018}. We implemented this algorithm using the Stable Baseline library. 
+
+In our experiments, we tested two key parameters, learning rates and clip ranges. In the first experiment we tested 3 different clip ranges with a fixed learning rate of 0.0003. The experiment was set up to run for 1,000 episodes, with evaluation performed every 15 episodes, and a single run per configuration.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{figures/ppo_learn_clip1.png}
+  \caption{PPO performance with 3 different clip ranges.}
+  \label{fig:ppo-performance1}
+\end{figure}
+
+At the first clip range of 0.1, the agent achieved an early return of approximately 7,200 with another peak at around episode 750. Although this configuration had a long period of near 0 return between the two peaks it achieved the highest single evaluation return. The next clip range of 0.2 demonstrated a slower initial learning compared to 0.1, with lower peaks through learning episodes but showed a major peak at the midpoint of training. Lastly, the clip range of 0.3 showed very slow learning performance during early episodes and a major return peak near episode 800, maintaining sustained returns of 1,500-3,000. Although there is slow initial learning, 0.3 shows promising visible improvement in learning and high returns with more training. Overall, smaller clips values show a faster initial return but are less stable, and higher clip values learn slowly but show improvement with more training. 
+
+In the second experiment, we had a fixed clip range at $\epsilon = 0.2$ and tested with 3 different learning rates. 
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{figures/ppo_learn_e300.png}
+  \caption{PPO performance with a fixed clip range.}
+  \label{fig:ppo-performance2}
+\end{figure}
+
+The first learning rate of 0.001 showed high early returns but unsustained early in the training, this likely occurred because large policy updates caused the agent to overshoot good tower placement before exploring all action space. The second learning rate of 0.0003 also showed similar sparse and occasional peak returns throughout training, however towards the end of the training we can observe more consistent returns, which can be explained by the sparse rewards of the environment. The last learning rate of 0.00003, demonstrated the largest returns with a peak of 8,000. This likely occurred because small gradient steps allow the policy to not be vulnerable to environmental stochasticity. From both experiments the prolonged near 0 return can be explained by the environment's large state space as well as the sparse rewards making it difficult to have consistent results. 
+
 
 \subsubsection{DQN}
 For the DQN experiments, the agent observes the flattened metadata state vector and we apply per-feature min-max normalization before feeding it to the network. The Q-function is represented by a three-layer feed-forward network with two 128-unit hidden layers and ReLU activations, outputting one Q-value per discrete action. To stabilize learning, we follow the standard DQN design. We use an experience replay memory that stores up to 50,000 transitions, mini-batches of size 64 are sampled for updates, and a separate target network is updated every 10 episodes. Exploration is $\epsilon$-greedy with $\epsilon$ decaying exponentially from 1.0 to a minimum of 0.05 over episodes.
